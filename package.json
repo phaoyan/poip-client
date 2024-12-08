@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "temp": "ts-node src/utils/scripts/temp.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.29.0",
@@ -17,6 +18,7 @@
     "@solana/web3.js": "1",
     "@web3-storage/w3up-client": "^16.5.2",
     "next": "15.0.3",
+    "pinata": "^1.9.1",
     "pinata-web3": "^0.5.2",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
@@ -30,6 +32,7 @@
     "eslint-config-next": "15.0.3",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.1",
     "typescript": "^5"
   }
 }
