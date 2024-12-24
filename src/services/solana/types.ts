@@ -1,34 +1,35 @@
 import { PublicKey } from "@solana/web3.js"
 
-export type IPID = string
 
-export type  FiniteBuyout       = 1
-export type  CompensativeBuyout = 2
-export type  GoalmaxBuyout      = 3
-export const FINITE_BUYOUT       = 1
-export const COMPENSATIVE_BUYOUT = 2
-export const GOALMAX_BUYOUT      = 3
-export type IpContractType      = FiniteBuyout | CompensativeBuyout | GoalmaxBuyout // FB | CB | GM
-
-export type  IPPrivate   = 1
-export type  IPPublished = 2
-export type  IPPublic    = 3
+export type  IPPrivate    = 1
+export type  IPPublished  = 2
+export type  IPPublic     = 3
 export const IP_PRIVATE   = 1
 export const IP_PUBLISHED = 2
 export const IP_PUBLIC    = 3
 export type IPOwnership   = IPPrivate | IPPublished | IPPublic
 
 export interface IPAccount {
-    ipid: IPID
+    ipid: PublicKey
     link: string
+    intro: string
     owner: PublicKey
     ownership: IPOwnership
 }
 
 export interface IPContract {
-    ipid: IPID
-    contractType: IpContractType
+    ipid: PublicKey
     price: number
     goalcount: number
     maxcount: number
+}
+
+export interface IPMetadata {
+    ipid:        PublicKey
+    title:       string
+    filename:    string
+    cover:       string // 封面
+    description: string
+    links:       string[]
+    sksUrl:      string // 提供密钥服务的URL
 }

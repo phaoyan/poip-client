@@ -18,11 +18,32 @@ export const getGroup = async (name: string) => {
   return (await pinata.groups.list().name(name).all()).at(0)
 }
 
-export const uploadIPFile = async (ipFile: File)=>{
+export const uploadFile = async (file: File)=>{
   const groupId = (await getGroup(PINATA_IPDATA_GROUP))!.id
-  return await pinata.upload.file(ipFile, {groupId: groupId!})
+  return await pinata.upload.file(file, {groupId: groupId!})
 }
 
-export const getIPFile = async (cid: string)=>{
+export const getFile = async (cid: string)=>{
   return await pinata.gateways.get(cid)
 }
+
+export const deleteFile = async (cid: string) => {
+  try {
+    await pinata.unpin([cid]);
+    console.log(`Successfully deleted file with CID: ${cid}`);
+  } catch (error) {
+    console.error(`Error deleting file with CID: ${cid}`, error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+};
+
+export const updateFile = async (cid: string, newFile: File): Promise<string> => {
+  try {
+    await deleteFile(cid);
+    const uploadResponse = await uploadFile(newFile);
+    return uploadResponse.IpfsHash;
+  } catch (error) {
+    console.error(`Error updating file with CID: ${cid}`, error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+};

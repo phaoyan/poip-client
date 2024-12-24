@@ -66,10 +66,14 @@ export type Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         },
         {
           "name": "link",
+          "type": "string"
+        },
+        {
+          "name": "intro",
           "type": "string"
         }
       ]
@@ -96,6 +100,66 @@ export type Poip = {
       "args": [
         {
           "name": "ipid",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "updateIpAccountLink",
+      "accounts": [
+        {
+          "name": "ipAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "ipid",
+          "type": "publicKey"
+        },
+        {
+          "name": "value",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "updateIpAccountIntro",
+      "accounts": [
+        {
+          "name": "ipAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "ipid",
+          "type": "publicKey"
+        },
+        {
+          "name": "value",
           "type": "string"
         }
       ]
@@ -127,7 +191,7 @@ export type Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         },
         {
           "name": "price",
@@ -139,10 +203,6 @@ export type Poip = {
         },
         {
           "name": "maxcount",
-          "type": "u64"
-        },
-        {
-          "name": "contractType",
           "type": "u64"
         }
       ]
@@ -179,7 +239,7 @@ export type Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         }
       ]
     },
@@ -215,7 +275,7 @@ export type Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         }
       ]
     },
@@ -251,7 +311,7 @@ export type Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         }
       ]
     }
@@ -264,10 +324,14 @@ export type Poip = {
         "fields": [
           {
             "name": "ipid",
-            "type": "string"
+            "type": "publicKey"
           },
           {
             "name": "link",
+            "type": "string"
+          },
+          {
+            "name": "intro",
             "type": "string"
           },
           {
@@ -285,7 +349,12 @@ export type Poip = {
       "name": "userAccount",
       "type": {
         "kind": "struct",
-        "fields": []
+        "fields": [
+          {
+            "name": "userAddr",
+            "type": "publicKey"
+          }
+        ]
       }
     },
     {
@@ -294,11 +363,11 @@ export type Poip = {
         "kind": "struct",
         "fields": [
           {
-            "name": "price",
-            "type": "u64"
+            "name": "ipAccount",
+            "type": "publicKey"
           },
           {
-            "name": "contractType",
+            "name": "price",
             "type": "u64"
           },
           {
@@ -325,6 +394,10 @@ export type Poip = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "ipAccount",
+            "type": "publicKey"
+          },
           {
             "name": "withdrawal",
             "type": "u64"
@@ -441,10 +514,14 @@ export const IDL: Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         },
         {
           "name": "link",
+          "type": "string"
+        },
+        {
+          "name": "intro",
           "type": "string"
         }
       ]
@@ -471,6 +548,66 @@ export const IDL: Poip = {
       "args": [
         {
           "name": "ipid",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "updateIpAccountLink",
+      "accounts": [
+        {
+          "name": "ipAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "ipid",
+          "type": "publicKey"
+        },
+        {
+          "name": "value",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "updateIpAccountIntro",
+      "accounts": [
+        {
+          "name": "ipAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "ipid",
+          "type": "publicKey"
+        },
+        {
+          "name": "value",
           "type": "string"
         }
       ]
@@ -502,7 +639,7 @@ export const IDL: Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         },
         {
           "name": "price",
@@ -514,10 +651,6 @@ export const IDL: Poip = {
         },
         {
           "name": "maxcount",
-          "type": "u64"
-        },
-        {
-          "name": "contractType",
           "type": "u64"
         }
       ]
@@ -554,7 +687,7 @@ export const IDL: Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         }
       ]
     },
@@ -590,7 +723,7 @@ export const IDL: Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         }
       ]
     },
@@ -626,7 +759,7 @@ export const IDL: Poip = {
       "args": [
         {
           "name": "ipid",
-          "type": "string"
+          "type": "publicKey"
         }
       ]
     }
@@ -639,10 +772,14 @@ export const IDL: Poip = {
         "fields": [
           {
             "name": "ipid",
-            "type": "string"
+            "type": "publicKey"
           },
           {
             "name": "link",
+            "type": "string"
+          },
+          {
+            "name": "intro",
             "type": "string"
           },
           {
@@ -660,7 +797,12 @@ export const IDL: Poip = {
       "name": "userAccount",
       "type": {
         "kind": "struct",
-        "fields": []
+        "fields": [
+          {
+            "name": "userAddr",
+            "type": "publicKey"
+          }
+        ]
       }
     },
     {
@@ -669,11 +811,11 @@ export const IDL: Poip = {
         "kind": "struct",
         "fields": [
           {
-            "name": "price",
-            "type": "u64"
+            "name": "ipAccount",
+            "type": "publicKey"
           },
           {
-            "name": "contractType",
+            "name": "price",
             "type": "u64"
           },
           {
@@ -700,6 +842,10 @@ export const IDL: Poip = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "ipAccount",
+            "type": "publicKey"
+          },
           {
             "name": "withdrawal",
             "type": "u64"

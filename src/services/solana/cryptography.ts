@@ -1,4 +1,7 @@
 import forge from 'node-forge';
+import {randomBytes} from "crypto"
+import { createHash } from 'crypto';
+import { Keypair } from '@solana/web3.js';
 
 export const encrypt = async (file: File): Promise<{ encryptedBlob: Blob, keyBase64: string, ivBase64: string }> => {
   return new Promise((resolve, reject) => {
@@ -104,4 +107,9 @@ export const decrypt = async ({
     console.error("Decryption process failed:", error);
     return null;
   }
+};
+
+export const generateRandomBytes = (length: number): string => {
+  const {publicKey} = Keypair.generate()
+  return publicKey.toString()
 };

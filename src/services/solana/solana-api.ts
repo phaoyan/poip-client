@@ -2,9 +2,9 @@ import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react"
 import { PublicKey, SystemProgram, Connection, LAMPORTS_PER_SOL } from "@solana/web3.js"
 import idl from "./poip.json";
 import {Poip} from "./poip"
-import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
+import { AnchorProvider, BN, Program, ProgramAccount } from "@coral-xyz/anchor";
 import toast from "react-hot-toast";
-import { IPAccount, IpContractType } from "./types";
+import { IPAccount } from "./types";
 
 export const PROGRAM_ID_POIP = new PublicKey(idl.metadata.address)
 // export const NETWORK = "https://api.devnet.solana.com"
@@ -22,12 +22,12 @@ export const useTxCreateIPAccount = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
     
-    return async (params: {ipid: string, link: string})=>{
+    return async (params: {ipid: PublicKey, link: string, intro: string})=>{
         try {
-            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   Buffer.from(params.ipid)], PROGRAM_ID_POIP)[0]
+            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             console.log("PROGRAM ID", PROGRAM_ID_POIP)
             const txSign = await program.methods
-                .createIpAccount(params.ipid, params.link)
+                .createIpAccount(params.ipid, params.link, params.intro)
                 .accounts({
                     ipAccount: ipAccount,
                     signer: wallet.publicKey!,
@@ -45,9 +45,9 @@ export const useTxDeleteIPAccount = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
     
-    return async (ipid: string)=>{
+    return async (ipid: PublicKey)=>{
         try {
-            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
+            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             const inst = await program.methods
                 .deleteIpAccount(ipid)
                 .accounts({
@@ -63,34 +63,76 @@ export const useTxDeleteIPAccount = ()=>{
     }
 }
 
+export const useTxUpdateIPAccountLink = ()=>{
+    const wallet = useWallet()
+    const program = useAnchorProgram()
+
+    return async (ipid: PublicKey, newLink: string)=>{
+        try {
+            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+            const txSign = await program.methods
+                .updateIpAccountLink(ipid, newLink)
+                .accounts({
+                    ipAccount: ipAccount,
+                    signer: wallet.publicKey!,
+                    systemProgram: SystemProgram.programId
+                }).rpc()
+            toast.success(`Tx Update Ip Account ${ipid} Link Success: ${txSign}`)
+        } catch (error: any) {
+            toast.error(`Transaction Fail...`)
+            console.error(error)
+        }
+    }
+}
+
+export const useTxUpdateIPAccountIntro = ()=>{
+    const wallet = useWallet()
+    const program = useAnchorProgram()
+
+    return async (ipid: PublicKey, newIntro: string)=>{
+        try {
+            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+            const txSign = await program.methods
+                .updateIpAccountIntro(ipid, newIntro)
+                .accounts({
+                    ipAccount: ipAccount,
+                    signer: wallet.publicKey!,
+                    systemProgram: SystemProgram.programId
+                }).rpc()
+            toast.success(`Tx Update Ip Account ${ipid} Intro Success: ${txSign}`)
+        } catch (error: any) {
+            toast.error(`Transaction Fail...`)
+            console.error(error)
+        }
+    }
+}
+
 export const useTxPublish = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
 
-    return async (props: {
-        ipid: string,
+    return async (params: {
+        ipid: PublicKey,
         price: number,
         goalcount: number,
         maxcount: number,
-        contractType: IpContractType
     })=>{
         try {
-            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), Buffer.from(props.ipid)], PROGRAM_ID_POIP)[0]
-            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), Buffer.from(props.ipid)], PROGRAM_ID_POIP)[0]
+            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             const inst = await program.methods
                 .publish(
-                    props.ipid, 
-                    new BN(props.price), 
-                    new BN(props.goalcount), 
-                    new BN(props.maxcount || 0), 
-                    new BN(props.contractType))
+                    params.ipid, 
+                    new BN(params.price), 
+                    new BN(params.goalcount), 
+                    new BN(params.maxcount || 0))
                 .accounts({
                     ciAccount: ciAccount,
                     ipAccount: ipAccount,
                     signer: wallet.publicKey!,
                     systemProgram: SystemProgram.programId
                 }).rpc()
-            toast.success(`Tx Publish Contract For ${props.ipid} Success: ${inst}`)
+            toast.success(`Tx Publish Contract For ${params.ipid} Success: ${inst}`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
             console.error(error)
@@ -102,9 +144,9 @@ export const useTxPay = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
 
-    return async (ipid: string)=>{
-        const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
-        const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
+    return async (ipid: PublicKey)=>{
+        const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+        const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), ciAccount.toBuffer()], PROGRAM_ID_POIP)[0]
         const inst = await program.methods
             .pay(ipid)
@@ -123,10 +165,10 @@ export const useTxWithdraw = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
 
-    return async (ipid: string)=>{
+    return async (ipid: PublicKey)=>{
         try {
-            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
-            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
+            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             const ownerAccount = PublicKey.findProgramAddressSync([Buffer.from("user"), wallet.publicKey!.toBuffer()], PROGRAM_ID_POIP)[0]
             const inst = await program.methods
                 .withraw(ipid)
@@ -149,10 +191,10 @@ export const useTxBonus = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
 
-    return async (ipid: string)=>{
+    return async (ipid: PublicKey)=>{
         try {
-            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
-            const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
+            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+            const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             const userAccount = PublicKey.findProgramAddressSync([Buffer.from("user"), wallet.publicKey!.toBuffer()], PROGRAM_ID_POIP)[0]
             const inst = await program.methods
                 .bonus(ipid)
@@ -212,8 +254,8 @@ export const useGetPayment = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
 
-    return async (ipid: string)=>{
-        const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
+    return async (ipid: PublicKey)=>{
+        const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), ciAccount.toBuffer()], PROGRAM_ID_POIP)[0]
         const accountData = await program.account.cpAccount.fetchNullable(cpAccount)
         return accountData
@@ -223,8 +265,8 @@ export const useGetPayment = ()=>{
 export const useGetPaymentWithAddress = ()=>{
     const program = useAnchorProgram()
 
-    return async (ipid: string, address: Uint8Array)=>{
-        const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), Buffer.from(address), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
+    return async (ipid: PublicKey, address: Uint8Array)=>{
+        const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), Buffer.from(address), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         const accountData = await program.account.cpAccount.fetchNullable(cpAccount)
         return accountData
     }
@@ -233,17 +275,25 @@ export const useGetPaymentWithAddress = ()=>{
 export const useGetIPAccount  = ()=>{
     const program = useAnchorProgram()
 
-    return async (ipid: string): Promise<IPAccount | null> =>{
-        const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
+    return async (ipid: PublicKey): Promise<IPAccount | null> =>{
+        const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         return await program.account.ipAccount.fetchNullable(ipAccount)
+    }
+}
+
+export const useGetAllIPAccounts = ()=>{
+    const program = useAnchorProgram()
+
+    return async (): Promise<ProgramAccount<IPAccount>[]> =>{
+        return await program.account.ipAccount.all()
     }
 }
 
 export const useGetContractAccount = ()=>{
     const program = useAnchorProgram()
 
-    return async (ipid: String): Promise<any> =>{
-        const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), Buffer.from(ipid)], PROGRAM_ID_POIP)[0]
+    return async (ipid: PublicKey): Promise<any> =>{
+        const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         return await program.account.ciAccount.fetchNullable(ciAccount)
     }
 }
