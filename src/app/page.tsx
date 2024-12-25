@@ -1,3 +1,4 @@
+// src/app/page.tsx
 "use client";
 
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";

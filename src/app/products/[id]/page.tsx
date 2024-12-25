@@ -8,7 +8,12 @@ import { IPAccount, IPMetadata } from '@/services/solana/types';
 import { useGetIPAccount, useGetPayment } from '@/services/solana/solana-api';
 import { usePurchaseAndDecrypt, useUpdateIntroFile } from '@/services/solana/poip-service';
 import { PublicKey } from '@solana/web3.js';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
+import { uploadFile, extractCid, deleteFile } from '@/services/solana/pinata';
+import PageTitleBar from '@/components/layout/PageTitleBar';
+import Skeleton from '@/components/layout/Skeleton';
+
+
 
 const ProductDetailPage: React.FC = () => {
     const params = useParams();
@@ -34,6 +39,9 @@ const ProductDetailPage: React.FC = () => {
     const [newLinksInput, setNewLinksInput] = useState('');
     const [newSksUrl, setNewSksUrl] = useState('');
     const [isUpdatingIntro, setIsUpdatingIntro] = useState(false);
+    const [isUploadingNewCover, setIsUploadingNewCover] = useState(false);
+    const [pinataGateway, setPinataGateway] = useState<string>('');
+    const [pinataJWT, setPinataJWT] = useState<string>('');
 
     useEffect(() => {
         const fetchProductDetails = async () => {
@@ -70,7 +78,7 @@ const ProductDetailPage: React.FC = () => {
                 }
             } catch (err: any) {
                 console.error("Failed to fetch IP Account or Payment Status:", err);
-                setError(`获取 IP 账户或支付状态失败: ${err.message || err.toString()}`);
+                setError(`Failed to fetch IP Account or Payment Status: ${err.message || err.toString()}`);
             } finally {
                 setLoading(false);
             }
@@ -83,12 +91,12 @@ const ProductDetailPage: React.FC = () => {
         if (!ipAccount || !id) return;
         try {
             setIsPurchasing(true);
-            await purchaseAndDecrypt({ ipid: new PublicKey(id) });
+            const purchased = await purchaseAndDecrypt({ ipid: new PublicKey(id) });
             setIsPurchasing(false);
-            setHasPurchased(true);
+            setHasPurchased(!!purchased);
         } catch (error) {
-            console.error('购买失败:', error);
-            alert(`购买失败: ${error}`);
+            console.error('Purchase failed:', error);
+            alert(`Purchase failed: ${error}`);
         }
     };
 
@@ -111,6 +119,11 @@ const ProductDetailPage: React.FC = () => {
 
     const handleUpdateIntro = async () => {
         if (!ipAccount || !id) return;
+        if (!pinataJWT || !pinataGateway) {
+            toast.error('Please fill in Pinata Gateway and Pinata JWT');
+            return;
+        }
+
         setIsUpdatingIntro(true);
         try {
             const linksArray = newLinksInput.split(',').map(link => link.trim()).filter(link => link !== '');
@@ -127,24 +140,22 @@ const ProductDetailPage: React.FC = () => {
             // If a new cover file is selected, upload it first
             let coverIpfsHash = metadata?.cover || '';
             if (newCover) {
-                // **TODO:** Implement file upload logic using pinata and get the IPFS hash
-                console.log("Uploading new cover file:", newCover);
-                const formData = new FormData();
-                formData.append('file', newCover);
-                // Replace with your actual upload logic
-                const uploadResponse = await fetch('/api/upload-ipfs', { // Example API route
-                    method: 'POST',
-                    body: formData,
-                });
-                if (uploadResponse.ok) {
-                    const uploadData = await uploadResponse.json();
-                    coverIpfsHash = uploadData.ipfsHash; // Assuming your API returns ipfsHash
+                setIsUploadingNewCover(true);
+                try {
+                    const response = await uploadFile(newCover, pinataJWT, pinataGateway);
+                    coverIpfsHash = `https://${pinataGateway}/ipfs/${response.IpfsHash}`;
                     newMetadata.cover = coverIpfsHash;
-                } else {
-                    console.error("Failed to upload cover image");
-                    alert("Failed to upload cover image");
+                } catch (uploadError) {
+                    console.error("Failed to upload cover image", uploadError);
                     setIsUpdatingIntro(false);
+                    setIsUploadingNewCover(false);
                     return;
+                } finally {
+                    setIsUploadingNewCover(false);
+                    if(!!metadata) {
+                        const oriCid = extractCid(metadata.cover)
+                        oriCid && await deleteFile(oriCid, pinataJWT, pinataGateway)
+                    }
                 }
             }
 
@@ -152,7 +163,7 @@ const ProductDetailPage: React.FC = () => {
             const metadataBlob = new Blob([JSON.stringify(newMetadata)], { type: 'application/json' });
             const metadataFile = new File([metadataBlob], `${newFilename}.json`);
 
-            await updateIntroFile(new PublicKey(id), metadataFile, newMetadata);
+            await updateIntroFile(new PublicKey(id), metadataFile, newMetadata, pinataJWT, pinataGateway);
             setMetadata(newMetadata); // Update local state
             closeEditModal();
         } catch (error) {
@@ -172,25 +183,26 @@ const ProductDetailPage: React.FC = () => {
     };
 
     if (loading) {
-        return <div className="text-center mt-8">加载中...</div>;
+        return <Skeleton/>;
     }
 
     if (error) {
-        return <div className="text-center mt-8 text-red-500">错误: {error}</div>;
+        return <div className="text-center mt-8 text-red-500">Error: {error}</div>;
     }
 
     if (!ipAccount || !metadata) {
-        return <div className="text-center mt-8">未找到该知识产权。</div>;
+        return <div className="text-center mt-8">Intellectual Property not found.</div>;
     }
 
     const isOwner = wallet.publicKey && ipAccount.owner.equals(wallet.publicKey);
 
     return (
-        <div className="container mx-auto p-4">
-            <Toaster />
-            <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+        <div>
+            <PageTitleBar/>
+            <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg overflow-hidden mt-10">
                 <div className="p-6">
-                    <h1 className="text-3xl font-bold mb-4">{metadata.title}</h1>
+                    {metadata.cover && (<img src={metadata.cover} alt={`${metadata.title} Cover`} className="w-full h-auto rounded mb-3" />)}
+                    <h1 className="text-3xl font-extrabold mb-4">{metadata.title}</h1>
                     <p className="text-gray-700 mb-6">{metadata.description}</p>
                     <p className="text-sm text-gray-500">Filename: {metadata.filename}</p>
                     <p className="text-sm text-gray-500">SKS URL: {metadata.sksUrl}</p>
@@ -202,107 +214,170 @@ const ProductDetailPage: React.FC = () => {
                             onClick={handlePurchase}
                             disabled={isPurchasing || !wallet.connected}
                         >
-                            {isPurchasing ? '购买中...' : hasPurchased ? '查看' : '购买并查看'}
+                            {isPurchasing ? 'Purchasing...' : hasPurchased ? 'Download' : 'Purchase and Download'}
                         </button>
-                        {!wallet.connected && <span className="text-gray-500">请先连接钱包</span>}
-                    </div>
+                        {!wallet.connected && <span className="text-gray-500">Please connect your wallet</span>}
 
-                    {isOwner && (
-                        <button
-                            className="mt-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                            onClick={openEditModal}
-                        >
-                            修改信息
-                        </button>
-                    )}
+                        {isOwner && (
+                            <button
+                                className="mt-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                                onClick={openEditModal}
+                            >
+                                Edit
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {isEditModalOpen && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
                     <div className="relative p-8 bg-white w-full max-w-md m-auto flex-col flex rounded-lg">
-                        <h2 className="text-2xl font-bold mb-4">修改信息</h2>
+                        <h2 className="text-2xl font-bold mb-4">Edit Information</h2>
                         <div className="mb-4">
-                            <label htmlFor="newTitle" className="block text-gray-700 text-sm font-bold mb-2">标题</label>
+                            <label htmlFor="newTitle" className="block text-gray-700 text-sm font-bold mb-2">Title</label>
                             <input
                                 type="text"
                                 id="newTitle"
                                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                placeholder="新的标题"
+                                placeholder="New Title"
                                 value={newTitle}
                                 onChange={(e) => setNewTitle(e.target.value)}
                             />
                         </div>
                         <div className="mb-4">
-                            <label htmlFor="newFilename" className="block text-gray-700 text-sm font-bold mb-2">文件名</label>
+                            <label htmlFor="newFilename" className="block text-gray-700 text-sm font-bold mb-2">Filename</label>
                             <input
                                 type="text"
                                 id="newFilename"
                                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                placeholder="新的文件名"
+                                placeholder="New Filename"
                                 value={newFilename}
                                 onChange={(e) => setNewFilename(e.target.value)}
                             />
                         </div>
                         <div className="mb-4">
-                            <label htmlFor="newCover" className="block text-gray-700 text-sm font-bold mb-2">封面</label>
-                            <input
-                                type="file"
-                                id="newCover"
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                onChange={handleCoverChange}
-                            />
+                            <label htmlFor="newCover" className="block text-gray-700 text-sm font-bold mb-2">Cover</label>
+                            <div className="flex items-center">
+                                <input
+                                    type="file"
+                                    id="newCover"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    onChange={handleCoverChange}
+                                    accept="image/*"
+                                    style={{ display: 'none' }} // Hide the default file input
+                                />
+                                <button
+                                    type="button"
+                                    className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isUploadingNewCover ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    onClick={() => document.getElementById('newCover')?.click()}
+                                    disabled={isUploadingNewCover}
+                                >
+                                    {isUploadingNewCover ? 'Uploading...' : 'Select Cover'}
+                                </button>
+                                {newCover && (
+                                    <div className="ml-4">
+                                        <img
+                                            src={newCover ? URL.createObjectURL(newCover) : metadata?.cover}
+                                            alt="New cover preview"
+                                            style={{ maxWidth: '100px', maxHeight: '100px' }}
+                                        />
+                                    </div>
+                                )}
+                                {metadata?.cover && !newCover && (
+                                    <div className="ml-4">
+                                        <img src={metadata.cover} alt="Current Cover" style={{ maxWidth: '100px', maxHeight: '100px' }} />
+                                    </div>
+                                )}
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">Click the button to select and upload a new cover image.</p>
                         </div>
                         <div className="mb-4">
-                            <label htmlFor="newDescription" className="block text-gray-700 text-sm font-bold mb-2">介绍信息</label>
+                            <label htmlFor="newDescription" className="block text-gray-700 text-sm font-bold mb-2">Description</label>
                             <textarea
                                 id="newDescription"
                                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                placeholder="新的介绍信息"
+                                placeholder="New Description"
                                 value={newDescription}
                                 onChange={(e) => setNewDescription(e.target.value)}
                             />
                         </div>
                         <div className="mb-4">
-                            <label htmlFor="newLinks" className="block text-gray-700 text-sm font-bold mb-2">相关链接 (逗号分隔)</label>
+                            <label htmlFor="newLinks" className="block text-gray-700 text-sm font-bold mb-2">Related Links (comma separated)</label>
                             <input
                                 type="text"
                                 id="newLinks"
                                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                placeholder="新的相关链接，用逗号分隔"
+                                placeholder="New related links, separated by commas"
                                 value={newLinksInput}
                                 onChange={(e) => setNewLinksInput(e.target.value)}
                             />
                         </div>
                         <div className="mb-4">
-                            <label htmlFor="newSksUrl" className="block text-gray-700 text-sm font-bold mb-2">密钥服务 URL</label>
+                            <label htmlFor="newSksUrl" className="block text-gray-700 text-sm font-bold mb-2">Secret Key Service URL</label>
                             <input
                                 type="text"
                                 id="newSksUrl"
                                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                placeholder="新的密钥服务 URL"
+                                placeholder="New Secret Key Service URL"
                                 value={newSksUrl}
                                 onChange={(e) => setNewSksUrl(e.target.value)}
                             />
                         </div>
+
+                        <div className="mb-4 flex space-x-4">
+                            <div className="w-1/2">
+                                <label htmlFor="pinataGateway" className="block text-gray-700 font-bold mb-2">
+                                    Pinata Gateway
+                                </label>
+                                <input
+                                    type="text"
+                                    id="pinataGateway"
+                                    className="shadow appearance-none border-b w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none"
+                                    value={pinataGateway}
+                                    onChange={(e) => setPinataGateway(e.target.value)}
+                                    placeholder="Pinata IPFS Gateway"
+                                    required
+                                />
+                            </div>
+
+                            <div className="w-1/2">
+                                <label htmlFor="pinataJWT" className="block text-gray-700 font-bold mb-2">
+                                    Pinata JWT
+                                </label>
+                                <input
+                                    type="text"
+                                    id="pinataJWT"
+                                    className="shadow appearance-none border-b w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none"
+                                    value={pinataJWT}
+                                    onChange={(e) => setPinataJWT(e.target.value)}
+                                    placeholder="Pinata JWT"
+                                    required
+                                />
+                            </div>
+                        </div>
+
                         <div className="flex justify-end">
                             <button
                                 className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2"
                                 onClick={closeEditModal}
                             >
-                                取消
+                                Cancel
                             </button>
                             <button
                                 className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                                 onClick={handleUpdateIntro}
-                                disabled={isUpdatingIntro}
+                                disabled={isUpdatingIntro || isUploadingNewCover}
                             >
-                                {isUpdatingIntro ? '更新中...' : '确定'}
+                                {isUpdatingIntro ? 'Updating...' : isUploadingNewCover ? 'Uploading...' : 'Confirm'}
                             </button>
                         </div>
                     </div>
+
                 </div>
             )}
+
+            <Toaster />
         </div>
     );
 };

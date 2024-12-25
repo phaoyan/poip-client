@@ -24,6 +24,12 @@ export interface IPContract {
     maxcount: number
 }
 
+export interface CPAccount {
+    ipid: PublicKey
+    owner: PublicKey
+    withdrawal: number
+}
+
 export interface IPMetadata {
     ipid:        PublicKey
     title:       string

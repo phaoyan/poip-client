@@ -13,7 +13,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
   const [metadata, setMetadata] = useState<IPMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [metadataError, setMetadataError] = useState<string | null>(null);
-  const isPublic = ipAccount.ownership === 3; // 假设 IPOwnership 3 代表 public
+  const isPublic = ipAccount.ownership === 3; // Assuming IPOwnership 3 represents public
   const getContractAccount = useGetContractAccount();
   const [ciAccount, setCiAccount] = useState<any | null>(null);
   const [loadingCiAccount, setLoadingCiAccount] = useState(true);
@@ -59,31 +59,27 @@ const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
 
   return (
     <div className="bg-white shadow rounded-lg p-4">
-      {loadingMetadata && <p className="text-gray-500">加载描述信息中...</p>}
+      {loadingMetadata && <p className="text-gray-500">Loading product description...</p>}
       {metadataError && <p className="text-red-500">{metadataError}</p>}
       {metadata && (
         <>
-          {metadata.title && <p className="text-gray-600 mb-2">标题: {metadata.title}</p>}
-          <p className="text-gray-500 mb-3">
-            描述: {metadata.description || '暂无描述'}
-          </p>
-          {metadata.cover && (
-            <img src={metadata.cover} alt={`${metadata.title} Cover`} className="w-full h-auto rounded mb-3" />
-          )}
+          {metadata.cover && (<img src={metadata.cover} alt={`${metadata.title} Cover`} className="w-full h-auto rounded mb-3" />)}
+          {metadata.title && <p className="text-gray-600 mb-2 text-2xl font-extrabold">{metadata.title}</p>}
+          <p className="text-gray-500 mb-3">{metadata.description || 'No description available'}</p>
         </>
       )}
 
       <div>
         {loadingCiAccount ? (
-          <p className="text-gray-500">加载售卖信息...</p>
+          <p className="text-gray-500">Loading sales information...</p>
         ) : ciAccount ? (
           <div className="mb-3">
-            <p className="text-sm text-gray-700">价格: {(ciAccount.price.toNumber() / LAMPORTS_PER_SOL).toFixed(2)} SOL</p>
-            <p className="text-sm text-gray-700">目标购买数: {ciAccount.goalcount.toNumber()}</p>
-            <p className="text-sm text-gray-700">最大购买数: {ciAccount.maxcount.toNumber() === 0 ? '无限制' : ciAccount.maxcount.toNumber()}</p>
+            <p className="text-sm text-gray-700">{
+              (ciAccount.price.toNumber() / LAMPORTS_PER_SOL).toFixed(8)} SOL
+              ({" "}{ciAccount.goalcount.toNumber()}{" "}~{" "}{ciAccount.maxcount.toNumber() === 0 ? 'Unlimited' : ciAccount.maxcount.toNumber()}{" "})</p>
           </div>
         ) : (
-          <p className="text-gray-700 mb-3">暂无售卖信息</p>
+          <p className="text-gray-700 mb-3">No sales information available</p>
         )}
       </div>
 
@@ -91,14 +87,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
         <div>
           {isPublic ? (
             <span className="bg-green-100 text-green-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
-              已公开
+              Public
             </span>
           ) : (
-            <span className="text-gray-700">未公开</span>
+            <span className="text-gray-700">Private</span>
           )}
         </div>
         <Link href={`/products/${ipAccount.ipid}`} className="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-          查看详情
+          View Details
         </Link>
       </div>
     </div>

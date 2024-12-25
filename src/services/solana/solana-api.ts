@@ -4,7 +4,7 @@ import idl from "./poip.json";
 import {Poip} from "./poip"
 import { AnchorProvider, BN, Program, ProgramAccount } from "@coral-xyz/anchor";
 import toast from "react-hot-toast";
-import { IPAccount } from "./types";
+import { CPAccount, IPAccount } from "./types";
 
 export const PROGRAM_ID_POIP = new PublicKey(idl.metadata.address)
 // export const NETWORK = "https://api.devnet.solana.com"
@@ -33,7 +33,7 @@ export const useTxCreateIPAccount = ()=>{
                     signer: wallet.publicKey!,
                     systemProgram: SystemProgram.programId
                 }).rpc()
-            toast.success(`Tx Create Ip Account ${params.ipid} Success: ${txSign}`)
+            toast.success(`Tx Create Ip Account Success`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
             console.error(error)
@@ -48,14 +48,14 @@ export const useTxDeleteIPAccount = ()=>{
     return async (ipid: PublicKey)=>{
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-            const inst = await program.methods
+            await program.methods
                 .deleteIpAccount(ipid)
                 .accounts({
                     ipAccount: ipAccount,
                     signer: wallet.publicKey!,
                     systemProgram: SystemProgram.programId
                 }).rpc()
-            toast.success(`Tx Delete Ip Account ${ipid} Success: ${inst}`)
+            toast.success(`Tx Delete Ip Account Success`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
             console.error(error)
@@ -70,14 +70,14 @@ export const useTxUpdateIPAccountLink = ()=>{
     return async (ipid: PublicKey, newLink: string)=>{
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-            const txSign = await program.methods
+            await program.methods
                 .updateIpAccountLink(ipid, newLink)
                 .accounts({
                     ipAccount: ipAccount,
                     signer: wallet.publicKey!,
                     systemProgram: SystemProgram.programId
                 }).rpc()
-            toast.success(`Tx Update Ip Account ${ipid} Link Success: ${txSign}`)
+            toast.success(`Tx Update Ip Account Link Success`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
             console.error(error)
@@ -92,14 +92,14 @@ export const useTxUpdateIPAccountIntro = ()=>{
     return async (ipid: PublicKey, newIntro: string)=>{
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-            const txSign = await program.methods
+            await program.methods
                 .updateIpAccountIntro(ipid, newIntro)
                 .accounts({
                     ipAccount: ipAccount,
                     signer: wallet.publicKey!,
                     systemProgram: SystemProgram.programId
                 }).rpc()
-            toast.success(`Tx Update Ip Account ${ipid} Intro Success: ${txSign}`)
+            toast.success(`Tx Update Ip Account Intro Success`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
             console.error(error)
@@ -132,7 +132,7 @@ export const useTxPublish = ()=>{
                     signer: wallet.publicKey!,
                     systemProgram: SystemProgram.programId
                 }).rpc()
-            toast.success(`Tx Publish Contract For ${params.ipid} Success: ${inst}`)
+            toast.success(`Tx Publish Contract Success`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
             console.error(error)
@@ -157,7 +157,7 @@ export const useTxPay = ()=>{
                 signer: wallet.publicKey!,
                 systemProgram: SystemProgram.programId
             }).rpc()
-        toast.success(`Tx Pay For ${ipid} Success: ${inst}`)
+        toast.success(`Tx Pay Success`)
     }
 }
 
@@ -179,7 +179,7 @@ export const useTxWithdraw = ()=>{
                     signer: wallet.publicKey!,
                     systemProgram: SystemProgram.programId
                 }).rpc()
-            toast.success(`Tx Withdraw From Contract ${ipid} Success: ${inst}`)
+            toast.success(`Tx Withdraw From Contract Success`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
             console.error(error)
@@ -205,7 +205,7 @@ export const useTxBonus = ()=>{
                     signer: wallet.publicKey!,
                     systemProgram: SystemProgram.programId
                 }).rpc()
-            toast.success(`Tx Withdraw From Contract ${ipid} Success: ${inst}`)
+            toast.success(`Tx Withdraw From Contract Success`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
             console.error(error)
@@ -227,7 +227,7 @@ export const useTxReclaim = ()=>{
                     signer: wallet.publicKey!,
                     systemProgram: SystemProgram.programId
                 }).rpc()
-            toast.success(`Tx Reclaim Token Success: ${inst}`)
+            toast.success(`Tx Reclaim Token Success`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
             console.error(error)
@@ -286,6 +286,13 @@ export const useGetAllIPAccounts = ()=>{
 
     return async (): Promise<ProgramAccount<IPAccount>[]> =>{
         return await program.account.ipAccount.all()
+    }
+}
+
+export const useGetAllPaymentAccounts = ()=>{
+    const program = useAnchorProgram()
+    return async (): Promise<ProgramAccount<CPAccount>[]>=>{
+        return await program.account.cpAccount.all()
     }
 }
 

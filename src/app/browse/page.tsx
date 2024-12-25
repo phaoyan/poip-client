@@ -1,12 +1,14 @@
 // src/app/browse/page.tsx
-'use client'; // 标记这是一个客户端组件
+'use client'; // Mark this as a client component
 
 import React, { useState, useEffect } from 'react';
-import { IPAccount } from '@/services/solana/types'; // 导入 IP 相关的类型定义
-import ProductCard from '@/components/product/ProductCard'; // 导入产品卡片组件
+import { IPAccount } from '@/services/solana/types'; // Import IP related type definitions
+import ProductCard from '@/components/product/ProductCard'; // Import Product Card component
 import { useGetAllIPAccounts } from '@/services/solana/solana-api';
-import PageTitleBar from '@/components/layout/PageTitleBar'; // 导入 PageTitleBar 组件
+import PageTitleBar from '@/components/layout/PageTitleBar'; // Import PageTitleBar component
 import { Toaster } from 'react-hot-toast';
+import Skeleton from '@/components/layout/Skeleton';
+
 
 const BrowsePage: React.FC = () => {
     const [ipAccounts, setIpAccounts] = useState<IPAccount[]>([]);
@@ -20,13 +22,13 @@ const BrowsePage: React.FC = () => {
             setError(null);
 
             try {
-                // 获取所有 IP Account 的地址
+                // Get all IP Account addresses
                 const allIpAccounts = await getAllIPAccounts();
                 const fetchedIpAccounts = allIpAccounts.map(account => account.account);
                 setIpAccounts(fetchedIpAccounts);
             } catch (err: any) {
                 console.error("Failed to fetch IP Accounts:", err);
-                setError(`获取 IP 账户失败: ${err.message || err.toString()}`);
+                setError(`Failed to fetch IP Accounts: ${err.message || err.toString()}`);
             } finally {
                 setLoading(false);
             }
@@ -34,22 +36,22 @@ const BrowsePage: React.FC = () => {
     }, []);
 
     if (loading) {
-        return <div>加载中...</div>;
+        return <Skeleton/>;
     }
 
     if (error) {
-        return <div>错误: {error}</div>;
+        return <div>Error: {error}</div>;
     }
 
     return (
         <div>
-            <PageTitleBar title="浏览知识产权" />
+            <PageTitleBar/>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 m-5">
                 {ipAccounts.map((ip) => (
                     <ProductCard key={ip.ipid.toBase58()} ipAccount={ip} />
                 ))}
             </div>
-            {ipAccounts.length === 0 && <p>暂无知识产权。</p>}
+            {ipAccounts.length === 0 && <p>No intellectual property available.</p>}
 
             <Toaster/>
         </div>

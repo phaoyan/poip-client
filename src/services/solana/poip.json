@@ -363,7 +363,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "ipAccount",
+            "name": "ipid",
             "type": "publicKey"
           },
           {
@@ -395,7 +395,11 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "ipAccount",
+            "name": "ipid",
+            "type": "publicKey"
+          },
+          {
+            "name": "owner",
             "type": "publicKey"
           },
           {
