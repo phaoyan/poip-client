@@ -5,28 +5,62 @@ import {Poip} from "./poip"
 import { AnchorProvider, BN, Program, ProgramAccount } from "@coral-xyz/anchor";
 import toast from "react-hot-toast";
 import { CPAccount, IPAccount } from "./types";
+import { useState, useEffect, useCallback } from 'react';
 
 export const PROGRAM_ID_POIP = new PublicKey(idl.metadata.address)
-// export const NETWORK = "https://api.devnet.solana.com"
-export const NETWORK = "http://127.0.0.1:8899"
-const connection = new Connection(NETWORK, "processed");
+
+// Create a React Context to manage the network
+export let _network: string = "https://api.devnet.solana.com"; // Default value
+export let _connection: Connection = new Connection(_network, "processed");
+
+export const useNetworkConfiguration = () => {
+    
+    const [network, setNetwork] = useState<string>(_network);
+
+    const updateNetwork = useCallback((newNetwork: string) => {
+        console.log("Network Change From: ", _network)
+        _network = newNetwork;
+        try {
+            _connection = new Connection(_network, "processed");
+            console.log("Network Change To: ", _network)
+        } catch (error) {
+            console.error("Error creating connection:", error);
+            // Optionally revert to the previous network or show an error message
+        }
+        setNetwork(newNetwork);
+    }, []);
+
+    return { network, updateNetwork };
+};
 
 export const useAnchorProgram = ()=>{
-    const wallet = useAnchorWallet()
-    const provider = new AnchorProvider(connection, wallet!, {preflightCommitment: "processed"})
-    //@ts-ignore
-    return new Program(idl, PROGRAM_ID_POIP, provider) as Program<Poip>
+    const wallet = useAnchorWallet();
+    const [program, setProgram] = useState<Program<Poip> | null>(null);
+
+    useEffect(() => {
+        if (wallet) {
+            const provider = new AnchorProvider(_connection, wallet, { preflightCommitment: "processed" })
+            //@ts-ignore
+            setProgram(new Program(idl, PROGRAM_ID_POIP, provider) as Program<Poip>);
+        } 
+    }, [wallet]);
+
+    return program;
 }
 
 export const useTxCreateIPAccount = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
-    
+
     return async (params: {ipid: PublicKey, link: string, intro: string})=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             console.log("PROGRAM ID", PROGRAM_ID_POIP)
-            const txSign = await program.methods
+            await program.methods
                 .createIpAccount(params.ipid, params.link, params.intro)
                 .accounts({
                     ipAccount: ipAccount,
@@ -44,8 +78,12 @@ export const useTxCreateIPAccount = ()=>{
 export const useTxDeleteIPAccount = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
-    
+
     return async (ipid: PublicKey)=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             await program.methods
@@ -68,6 +106,10 @@ export const useTxUpdateIPAccountLink = ()=>{
     const program = useAnchorProgram()
 
     return async (ipid: PublicKey, newLink: string)=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             await program.methods
@@ -90,6 +132,10 @@ export const useTxUpdateIPAccountIntro = ()=>{
     const program = useAnchorProgram()
 
     return async (ipid: PublicKey, newIntro: string)=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             await program.methods
@@ -117,14 +163,18 @@ export const useTxPublish = ()=>{
         goalcount: number,
         maxcount: number,
     })=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-            const inst = await program.methods
+            await program.methods
                 .publish(
-                    params.ipid, 
-                    new BN(params.price), 
-                    new BN(params.goalcount), 
+                    params.ipid,
+                    new BN(params.price),
+                    new BN(params.goalcount),
                     new BN(params.maxcount || 0))
                 .accounts({
                     ciAccount: ciAccount,
@@ -145,6 +195,10 @@ export const useTxPay = ()=>{
     const program = useAnchorProgram()
 
     return async (ipid: PublicKey)=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), ciAccount.toBuffer()], PROGRAM_ID_POIP)[0]
@@ -166,6 +220,10 @@ export const useTxWithdraw = ()=>{
     const program = useAnchorProgram()
 
     return async (ipid: PublicKey)=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
@@ -192,6 +250,10 @@ export const useTxBonus = ()=>{
     const program = useAnchorProgram()
 
     return async (ipid: PublicKey)=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         try {
             const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
@@ -218,6 +280,10 @@ export const useTxReclaim = ()=>{
     const program = useAnchorProgram()
 
     return async ()=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         try {
             const userAccount = PublicKey.findProgramAddressSync([Buffer.from("user"), wallet.publicKey!.toBuffer()], PROGRAM_ID_POIP)[0]
             const inst = await program.methods
@@ -240,6 +306,10 @@ export const useGetBalance = ()=>{
     const program = useAnchorProgram()
 
     return async ()=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return;
+        }
         try {
             const lamports = (await program.account.userAccount.getAccountInfo(wallet.publicKey!))!.lamports
             toast.success(`Balance In User Account: ${lamports / LAMPORTS_PER_SOL} SOL`)
@@ -255,27 +325,35 @@ export const useGetPayment = ()=>{
     const program = useAnchorProgram()
 
     return async (ipid: PublicKey)=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return null;
+        }
         const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), ciAccount.toBuffer()], PROGRAM_ID_POIP)[0]
-        const accountData = await program.account.cpAccount.fetchNullable(cpAccount)
-        return accountData
+        return await program.account.cpAccount.fetchNullable(cpAccount)
     }
 }
 
 export const useGetPaymentWithAddress = ()=>{
     const program = useAnchorProgram()
-
     return async (ipid: PublicKey, address: Uint8Array)=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return null;
+        }
         const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), Buffer.from(address), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-        const accountData = await program.account.cpAccount.fetchNullable(cpAccount)
-        return accountData
+        return await program.account.cpAccount.fetchNullable(cpAccount)
     }
 }
 
 export const useGetIPAccount  = ()=>{
     const program = useAnchorProgram()
-
     return async (ipid: PublicKey): Promise<IPAccount | null> =>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return null;
+        }
         const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         return await program.account.ipAccount.fetchNullable(ipAccount)
     }
@@ -283,8 +361,11 @@ export const useGetIPAccount  = ()=>{
 
 export const useGetAllIPAccounts = ()=>{
     const program = useAnchorProgram()
-
     return async (): Promise<ProgramAccount<IPAccount>[]> =>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return [];
+        }
         return await program.account.ipAccount.all()
     }
 }
@@ -292,14 +373,21 @@ export const useGetAllIPAccounts = ()=>{
 export const useGetAllPaymentAccounts = ()=>{
     const program = useAnchorProgram()
     return async (): Promise<ProgramAccount<CPAccount>[]>=>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return [];
+        }
         return await program.account.cpAccount.all()
     }
 }
 
 export const useGetContractAccount = ()=>{
     const program = useAnchorProgram()
-
     return async (ipid: PublicKey): Promise<any> =>{
+        if (!program) {
+            toast.error("Program not initialized.");
+            return [];
+        }
         const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
         return await program.account.ciAccount.fetchNullable(ciAccount)
     }

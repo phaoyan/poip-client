@@ -6,13 +6,15 @@ import {
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { NETWORK } from "../services/solana/solana-api";
+import { useNetworkConfiguration } from "../services/solana/solana-api";
  
 // Default styles that can be overridden by your app
 require("@solana/wallet-adapter-react-ui/styles.css");
 
 const AppWalletProvider = ({children}: any) => {
-    const network = NETWORK;
+
+    const {network} = useNetworkConfiguration()
+
     const wallets = useMemo(
       () => [
         // manually add any legacy wallet adapters here
@@ -22,7 +24,7 @@ const AppWalletProvider = ({children}: any) => {
     );
    
     return (
-      <ConnectionProvider endpoint={NETWORK}>
+      <ConnectionProvider endpoint={network}>
         <WalletProvider wallets={wallets} autoConnect>
           <WalletModalProvider>{children}</WalletModalProvider>
         </WalletProvider>

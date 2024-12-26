@@ -4,10 +4,9 @@
 import React, { useState } from 'react';
 import { useCreateIPAndEncrypt } from '@/services/solana/poip-service';
 import { useTxPublish } from '@/services/solana/solana-api';
-import PageTitleBar from '@/components/layout/PageTitleBar';
 import { IPMetadata } from '@/services/solana/types';
 import { Keypair } from '@solana/web3.js';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { uploadFile } from '@/services/solana/pinata';
 
 const PublishPage: React.FC = () => {
@@ -192,8 +191,6 @@ const PublishPage: React.FC = () => {
 
     return (
         <div>
-            <PageTitleBar />
-
             <div>
                 <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-2 mt-2">
                     
@@ -433,7 +430,6 @@ const PublishPage: React.FC = () => {
                 onClose={() => setIsModalOpen(false)}
                 data={modalData}/>
 
-            <Toaster />
         </div>
     );
 };

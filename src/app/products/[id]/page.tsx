@@ -5,12 +5,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { IPAccount, IPMetadata } from '@/services/solana/types';
-import { useGetIPAccount, useGetPayment } from '@/services/solana/solana-api';
+import { useAnchorProgram, useGetIPAccount, useGetPayment } from '@/services/solana/solana-api';
 import { usePurchaseAndDecrypt, useUpdateIntroFile } from '@/services/solana/poip-service';
 import { PublicKey } from '@solana/web3.js';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { uploadFile, extractCid, deleteFile } from '@/services/solana/pinata';
-import PageTitleBar from '@/components/layout/PageTitleBar';
 import Skeleton from '@/components/layout/Skeleton';
 
 
@@ -20,6 +19,8 @@ const ProductDetailPage: React.FC = () => {
     const id = typeof params.id === 'string' ? params.id : undefined;
 
     const wallet             = useWallet();
+    const program            = useAnchorProgram();
+
     const getIPAccount       = useGetIPAccount();
     const getPayment         = useGetPayment();
     const purchaseAndDecrypt = usePurchaseAndDecrypt();
@@ -45,7 +46,7 @@ const ProductDetailPage: React.FC = () => {
 
     useEffect(() => {
         const fetchProductDetails = async () => {
-            if (!id) return;
+            if (!id || !wallet || !program) return;
 
             setLoading(true);
             setError(null);
@@ -85,7 +86,7 @@ const ProductDetailPage: React.FC = () => {
         };
 
         fetchProductDetails();
-    }, [id, wallet.publicKey]);
+    }, [id, wallet.publicKey, program]);
 
     const handlePurchase = async () => {
         if (!ipAccount || !id) return;
@@ -198,7 +199,6 @@ const ProductDetailPage: React.FC = () => {
 
     return (
         <div>
-            <PageTitleBar/>
             <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg overflow-hidden mt-10">
                 <div className="p-6">
                     {metadata.cover && (<img src={metadata.cover} alt={`${metadata.title} Cover`} className="w-full h-auto rounded mb-3" />)}
@@ -377,7 +377,6 @@ const ProductDetailPage: React.FC = () => {
                 </div>
             )}
 
-            <Toaster />
         </div>
     );
 };

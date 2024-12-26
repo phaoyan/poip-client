@@ -5,13 +5,13 @@ import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import ProductCard from '@/components/product/ProductCard';
 import { IPAccount } from '@/services/solana/types';
-import { useGetAllIPAccounts, useGetAllPaymentAccounts, useGetIPAccount } from '@/services/solana/solana-api';
-import PageTitleBar from '@/components/layout/PageTitleBar';
-import { Toaster } from 'react-hot-toast';
+import { useAnchorProgram, useGetAllIPAccounts, useGetAllPaymentAccounts, useGetIPAccount } from '@/services/solana/solana-api';
 import Skeleton from '@/components/layout/Skeleton';
 
 const DashboardPage: React.FC = () => {
     const { publicKey } = useWallet();
+    const program = useAnchorProgram();
+
     const [publishedIPs, setPublishedIPs] = useState<IPAccount[]>([]);
     const [purchasedIPs, setPurchasedIPs] = useState<IPAccount[]>([]);
     const [loading, setLoading] = useState(true);
@@ -23,7 +23,7 @@ const DashboardPage: React.FC = () => {
 
     useEffect(() => {
         const fetchUserIPData = async () => {
-            if (!publicKey) {
+            if (!publicKey || !program) {
                 setLoading(false);
                 return;
             }
@@ -55,7 +55,7 @@ const DashboardPage: React.FC = () => {
                 setLoading(false);
             }
         }; fetchUserIPData();
-    }, [publicKey]);
+    }, [publicKey, program]);
 
     if (loading) {
         return <Skeleton/>;
@@ -71,35 +71,37 @@ const DashboardPage: React.FC = () => {
 
     return (
         <div>
-            <PageTitleBar/>
             <div className="flex">
-                <section className="w-1/2 ml-5 mb-8 mt-4 pr-2">
-                    <h2 className="text-2xl font-semibold mb-2">My Published IPs</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                        {publishedIPs.length > 0 ? (
-                            publishedIPs.map((ip) => (
-                                <ProductCard key={ip.ipid.toBase58()} ipAccount={ip} />
-                            ))) : (
-                            <p>You have not published any intellectual properties yet.</p>
-                        )}
-                    </div>
-                </section>
-
                 <section className="w-1/2 ml-5 mb-8 mt-4 pl-2">
-                    <h2 className="text-2xl font-semibold mb-2">My Purchased IPs</h2>
+                    <h2 className="text-4xl font-semibold mb-2">Purchased IPs</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                         {purchasedIPs.length > 0 ? (
                             purchasedIPs.map((ip) => (
                                 <ProductCard key={ip.ipid.toBase58()} ipAccount={ip} />
                             ))
                         ) : (
-                            <p>You have not purchased any intellectual properties yet.</p>
+                            <div className=' ml-10 mt-10'>
+                                <span className='text-4xl text-gray-200'> No Data  </span>    
+                            </div>
                         )}
+                    </div>
+                </section>
+
+                <section className="w-1/2 ml-5 mb-8 mt-4 pr-2">
+                    <h2 className="text-4xl font-semibold mb-2">Published IPs</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                        {publishedIPs.length > 0 ? (
+                            publishedIPs.map((ip) => (
+                                <ProductCard key={ip.ipid.toBase58()} ipAccount={ip} />
+                            ))) : (
+                                <div className=' ml-10 mt-10'>
+                                    <span className='text-4xl text-gray-200'> No Data  </span>    
+                                </div>
+                            )}
                     </div>
                 </section>
             </div>
 
-            <Toaster/>
         </div>
     );
 };
