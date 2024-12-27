@@ -1,20 +1,23 @@
+import * as anchor from "@coral-xyz/anchor";
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react"
-import { PublicKey, SystemProgram, Connection, LAMPORTS_PER_SOL } from "@solana/web3.js"
+import { PublicKey, SystemProgram, Connection } from "@solana/web3.js"
 import idl from "./poip.json";
 import {Poip} from "./poip"
-import { AnchorProvider, BN, Program, ProgramAccount } from "@coral-xyz/anchor";
+import { AnchorProvider, BN, Program, ProgramAccount, web3 } from "@coral-xyz/anchor";
 import toast from "react-hot-toast";
 import { CPAccount, IPAccount } from "./types";
 import { useState, useEffect, useCallback } from 'react';
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
 export const PROGRAM_ID_POIP = new PublicKey(idl.metadata.address)
 
 // Create a React Context to manage the network
-export let _network: string = "https://api.devnet.solana.com"; // Default value
+// export let _network: string = "https://api.devnet.solana.com"; // Default value
+export let _network: string = "http://localhost:8899"; // Default value
 export let _connection: Connection = new Connection(_network, "processed");
 
 export const useNetworkConfiguration = () => {
-    
+
     const [network, setNetwork] = useState<string>(_network);
 
     const updateNetwork = useCallback((newNetwork: string) => {
@@ -42,7 +45,7 @@ export const useAnchorProgram = ()=>{
             const provider = new AnchorProvider(_connection, wallet, { preflightCommitment: "processed" })
             //@ts-ignore
             setProgram(new Program(idl, PROGRAM_ID_POIP, provider) as Program<Poip>);
-        } 
+        }
     }, [wallet]);
 
     return program;
@@ -162,6 +165,7 @@ export const useTxPublish = ()=>{
         price: number,
         goalcount: number,
         maxcount: number,
+        tokenMint: PublicKey
     })=>{
         if (!program) {
             toast.error("Program not initialized.");
@@ -170,6 +174,7 @@ export const useTxPublish = ()=>{
         try {
             const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
             const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+            const ciTokenAccount = anchor.utils.token.associatedAddress({ mint: params.tokenMint, owner: ciAccount });
             await program.methods
                 .publish(
                     params.ipid,
@@ -180,7 +185,12 @@ export const useTxPublish = ()=>{
                     ciAccount: ciAccount,
                     ipAccount: ipAccount,
                     signer: wallet.publicKey!,
-                    systemProgram: SystemProgram.programId
+                    tokenMint: params.tokenMint,
+                    ciTokenAccount: ciTokenAccount,
+                    systemProgram: SystemProgram.programId,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    rent: web3.SYSVAR_RENT_PUBKEY,
                 }).rpc()
             toast.success(`Tx Publish Contract Success`)
         } catch (error: any) {
@@ -194,24 +204,43 @@ export const useTxPay = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
 
-    return async (ipid: PublicKey)=>{
+    return async (params: {ipid: PublicKey})=>{
         if (!program) {
             toast.error("Program not initialized.");
             return;
         }
-        const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-        const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+        const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+        const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+        const ciData = await program.account.ciAccount.fetch(ciAccount);
+        const payerTokenAccount = anchor.utils.token.associatedAddress({ mint: ciData.tokenMint, owner: wallet.publicKey! });
+        const ciTokenAccount = anchor.utils.token.associatedAddress({ mint: ciData.tokenMint, owner: ciAccount });
         const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), ciAccount.toBuffer()], PROGRAM_ID_POIP)[0]
-        const inst = await program.methods
-            .pay(ipid)
-            .accounts({
-                cpAccount: cpAccount,
-                ciAccount: ciAccount,
-                ipAccount: ipAccount,
-                signer: wallet.publicKey!,
-                systemProgram: SystemProgram.programId
-            }).rpc()
-        toast.success(`Tx Pay Success`)
+        try {
+            const inst = await program.methods
+                .pay(params.ipid)
+                .accounts({
+                    cpAccount: cpAccount,
+                    ciAccount: ciAccount,
+                    ipAccount: ipAccount,
+                    signer: wallet.publicKey!,
+                    payerTokenAccount: payerTokenAccount,
+                    ciTokenAccount: ciTokenAccount,
+                    systemProgram: SystemProgram.programId,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                }).instruction()
+
+            const transaction = new web3.Transaction().add(inst)
+            const signature   = await wallet.sendTransaction(transaction, _connection)
+            const txMessage   = transaction.serializeMessage()
+            toast.success(`Tx Pay Success`)
+
+            return {txMessage, signature}
+        } catch (error) {
+            toast.error(`Transaction Fail...`)
+            console.error(error)
+            return null;
+        }
     }
 }
 
@@ -219,23 +248,27 @@ export const useTxWithdraw = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
 
-    return async (ipid: PublicKey)=>{
+    return async (params: {ipid: PublicKey})=>{
         if (!program) {
             toast.error("Program not initialized.");
             return;
         }
         try {
-            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-            const ownerAccount = PublicKey.findProgramAddressSync([Buffer.from("user"), wallet.publicKey!.toBuffer()], PROGRAM_ID_POIP)[0]
-            const inst = await program.methods
-                .withraw(ipid)
+            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+            const ciData = await program.account.ciAccount.fetch(ciAccount);
+            const ciTokenAccount = anchor.utils.token.associatedAddress({ mint: ciData.tokenMint, owner: ciAccount });
+            const ownerTokenAccount = anchor.utils.token.associatedAddress({ mint: ciData.tokenMint, owner: wallet.publicKey! });
+            await program.methods
+                .withraw(params.ipid)
                 .accounts({
                     ciAccount: ciAccount,
                     ipAccount: ipAccount,
-                    ownerAccount: ownerAccount,
                     signer: wallet.publicKey!,
-                    systemProgram: SystemProgram.programId
+                    ciTokenAccount: ciTokenAccount,
+                    ownerTokenAccount: ownerTokenAccount,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                 }).rpc()
             toast.success(`Tx Withdraw From Contract Success`)
         } catch (error: any) {
@@ -249,72 +282,32 @@ export const useTxBonus = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()
 
-    return async (ipid: PublicKey)=>{
+    return async (params: {ipid: PublicKey})=>{
         if (!program) {
             toast.error("Program not initialized.");
             return;
         }
         try {
-            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-            const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-            const userAccount = PublicKey.findProgramAddressSync([Buffer.from("user"), wallet.publicKey!.toBuffer()], PROGRAM_ID_POIP)[0]
-            const inst = await program.methods
-                .bonus(ipid)
+            const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), params.ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+            const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), wallet.publicKey!.toBuffer(), ciAccount.toBuffer()], PROGRAM_ID_POIP)[0]
+            const ciData = await program.account.ciAccount.fetch(ciAccount);
+            const ciTokenAccount = anchor.utils.token.associatedAddress({ mint: ciData.tokenMint, owner: ciAccount });
+            const userTokenAccount = anchor.utils.token.associatedAddress({ mint: ciData.tokenMint, owner: wallet.publicKey! });
+
+            await program.methods
+                .bonus(params.ipid)
                 .accounts({
                     ciAccount: ciAccount,
                     cpAccount: cpAccount,
-                    userAccount: userAccount,
                     signer: wallet.publicKey!,
-                    systemProgram: SystemProgram.programId
+                    ciTokenAccount: ciTokenAccount,
+                    userTokenAccount: userTokenAccount,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                 }).rpc()
-            toast.success(`Tx Withdraw From Contract Success`)
+            toast.success(`Tx Bonus Payment Success`)
         } catch (error: any) {
             toast.error(`Transaction Fail...`)
-            console.error(error)
-        }
-    }
-}
-
-export const useTxReclaim = ()=>{
-    const wallet = useWallet()
-    const program = useAnchorProgram()
-
-    return async ()=>{
-        if (!program) {
-            toast.error("Program not initialized.");
-            return;
-        }
-        try {
-            const userAccount = PublicKey.findProgramAddressSync([Buffer.from("user"), wallet.publicKey!.toBuffer()], PROGRAM_ID_POIP)[0]
-            const inst = await program.methods
-                .deleteUserAccount()
-                .accounts({
-                    userAccount: userAccount,
-                    signer: wallet.publicKey!,
-                    systemProgram: SystemProgram.programId
-                }).rpc()
-            toast.success(`Tx Reclaim Token Success`)
-        } catch (error: any) {
-            toast.error(`Transaction Fail...`)
-            console.error(error)
-        }
-    }
-}
-
-export const useGetBalance = ()=>{
-    const wallet = useWallet()
-    const program = useAnchorProgram()
-
-    return async ()=>{
-        if (!program) {
-            toast.error("Program not initialized.");
-            return;
-        }
-        try {
-            const lamports = (await program.account.userAccount.getAccountInfo(wallet.publicKey!))!.lamports
-            toast.success(`Balance In User Account: ${lamports / LAMPORTS_PER_SOL} SOL`)
-        } catch(error: any) {
-            toast.error(`Get Balance Fail...`)
             console.error(error)
         }
     }
@@ -337,12 +330,13 @@ export const useGetPayment = ()=>{
 
 export const useGetPaymentWithAddress = ()=>{
     const program = useAnchorProgram()
-    return async (ipid: PublicKey, address: Uint8Array)=>{
+    return async (ipid: PublicKey, address: PublicKey)=>{
         if (!program) {
             toast.error("Program not initialized.");
             return null;
         }
-        const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), Buffer.from(address), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+        const ciAccount = PublicKey.findProgramAddressSync([Buffer.from("ci"), ipid.toBuffer()], PROGRAM_ID_POIP)[0]
+        const cpAccount = PublicKey.findProgramAddressSync([Buffer.from("cp"), address.toBuffer(), ciAccount.toBuffer()], PROGRAM_ID_POIP)[0]
         return await program.account.cpAccount.fetchNullable(cpAccount)
     }
 }
@@ -392,3 +386,4 @@ export const useGetContractAccount = ()=>{
         return await program.account.ciAccount.fetchNullable(ciAccount)
     }
 }
+

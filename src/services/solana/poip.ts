@@ -3,48 +3,6 @@ export type Poip = {
   "name": "poip",
   "instructions": [
     {
-      "name": "createUserAccount",
-      "accounts": [
-        {
-          "name": "userAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "deleteUserAccount",
-      "accounts": [
-        {
-          "name": "userAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "createIpAccount",
       "accounts": [
         {
@@ -183,7 +141,32 @@ export type Poip = {
           "isSigner": true
         },
         {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ciTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
           "isMut": false,
           "isSigner": false
         }
@@ -231,7 +214,27 @@ export type Poip = {
           "isSigner": true
         },
         {
+          "name": "payerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ciTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -257,17 +260,27 @@ export type Poip = {
           "isSigner": false
         },
         {
-          "name": "ownerAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "signer",
           "isMut": true,
           "isSigner": true
         },
         {
-          "name": "systemProgram",
+          "name": "ciTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ownerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -293,17 +306,27 @@ export type Poip = {
           "isSigner": false
         },
         {
-          "name": "userAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "signer",
           "isMut": true,
           "isSigner": true
         },
         {
-          "name": "systemProgram",
+          "name": "ciTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -346,24 +369,16 @@ export type Poip = {
       }
     },
     {
-      "name": "userAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "userAddr",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
       "name": "ciAccount",
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "ipid",
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenMint",
             "type": "publicKey"
           },
           {
@@ -455,48 +470,6 @@ export const IDL: Poip = {
   "name": "poip",
   "instructions": [
     {
-      "name": "createUserAccount",
-      "accounts": [
-        {
-          "name": "userAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "deleteUserAccount",
-      "accounts": [
-        {
-          "name": "userAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "createIpAccount",
       "accounts": [
         {
@@ -635,7 +608,32 @@ export const IDL: Poip = {
           "isSigner": true
         },
         {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ciTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
           "isMut": false,
           "isSigner": false
         }
@@ -683,7 +681,27 @@ export const IDL: Poip = {
           "isSigner": true
         },
         {
+          "name": "payerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ciTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -709,17 +727,27 @@ export const IDL: Poip = {
           "isSigner": false
         },
         {
-          "name": "ownerAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "signer",
           "isMut": true,
           "isSigner": true
         },
         {
-          "name": "systemProgram",
+          "name": "ciTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ownerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -745,17 +773,27 @@ export const IDL: Poip = {
           "isSigner": false
         },
         {
-          "name": "userAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "signer",
           "isMut": true,
           "isSigner": true
         },
         {
-          "name": "systemProgram",
+          "name": "ciTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -798,24 +836,16 @@ export const IDL: Poip = {
       }
     },
     {
-      "name": "userAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "userAddr",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
       "name": "ciAccount",
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "ipid",
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenMint",
             "type": "publicKey"
           },
           {

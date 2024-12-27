@@ -17,11 +17,14 @@ export interface IPAccount {
     ownership: IPOwnership
 }
 
-export interface IPContract {
+export interface CIAccount {
     ipid: PublicKey
+    tokenMint: PublicKey
     price: number
     goalcount: number
     maxcount: number
+    currcount: number
+    withdrawalCount: number
 }
 
 export interface CPAccount {

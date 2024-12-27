@@ -1,8 +1,9 @@
+
 // src/components/product/ProductCard.tsx
 import React, { useState, useEffect } from 'react';
 import { IPAccount, IPMetadata } from '@/services/solana/types';
 import Link from 'next/link';
-import { useGetContractAccount } from '@/services/solana/solana-api';
+import { useAnchorProgram, useGetContractAccount } from '@/services/solana/solana-api';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 interface ProductCardProps {
@@ -15,6 +16,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
   const [metadataError, setMetadataError] = useState<string | null>(null);
   const isPublic = ipAccount.ownership === 3; // Assuming IPOwnership 3 represents public
   const getContractAccount = useGetContractAccount();
+  const program = useAnchorProgram()
   const [ciAccount, setCiAccount] = useState<any | null>(null);
   const [loadingCiAccount, setLoadingCiAccount] = useState(true);
 
@@ -42,6 +44,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
 
   useEffect(() => {
     const fetchCiAccount = async () => {
+      if(!program) return
+
       setLoadingCiAccount(true);
       try {
         const contractData = await getContractAccount(ipAccount.ipid);
@@ -55,7 +59,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
     };
 
     fetchCiAccount();
-  }, [ipAccount.ipid]);
+  }, [ipAccount.ipid, program]);
 
   return (
     <div className="bg-white shadow rounded-lg p-4">
@@ -75,8 +79,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
         ) : ciAccount ? (
           <div className="mb-3">
             <p className="text-sm text-gray-700">{
-              (ciAccount.price.toNumber() / LAMPORTS_PER_SOL).toFixed(8)} SOL
+              parseFloat((ciAccount.price.toNumber() / LAMPORTS_PER_SOL).toString())}
               ({" "}{ciAccount.goalcount.toNumber()}{" "}~{" "}{ciAccount.maxcount.toNumber() === 0 ? 'Unlimited' : ciAccount.maxcount.toNumber()}{" "})</p>
+            <p className="text-xs text-gray-500">Token Mint: {ciAccount.tokenMint.toBase58().substring(0, 8)}...</p>
           </div>
         ) : (
           <p className="text-gray-700 mb-3">No sales information available</p>

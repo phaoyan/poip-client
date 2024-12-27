@@ -1,18 +1,17 @@
 // src/app/products/[id]/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { IPAccount, IPMetadata } from '@/services/solana/types';
-import { useAnchorProgram, useGetIPAccount, useGetPayment } from '@/services/solana/solana-api';
+import { CIAccount, CPAccount, IPAccount, IPMetadata } from '@/services/solana/types';
+import { useAnchorProgram, useGetIPAccount, useGetPayment, useTxWithdraw, useTxBonus, useGetContractAccount, _network } from '@/services/solana/solana-api';
 import { usePurchaseAndDecrypt, useUpdateIntroFile } from '@/services/solana/poip-service';
-import { PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import toast from 'react-hot-toast';
 import { uploadFile, extractCid, deleteFile } from '@/services/solana/pinata';
 import Skeleton from '@/components/layout/Skeleton';
-
-
+import { getMint, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 const ProductDetailPage: React.FC = () => {
     const params = useParams();
@@ -22,11 +21,17 @@ const ProductDetailPage: React.FC = () => {
     const program            = useAnchorProgram();
 
     const getIPAccount       = useGetIPAccount();
+    const getCIAccount       = useGetContractAccount();
+    const getCPAccount       = useGetPayment();
     const getPayment         = useGetPayment();
     const purchaseAndDecrypt = usePurchaseAndDecrypt();
     const updateIntroFile    = useUpdateIntroFile();
+    const txWithdraw         = useTxWithdraw();
+    const txBonus            = useTxBonus();
 
     const [ipAccount, setIpAccount] = useState<IPAccount | null>(null);
+    const [ciAccount, setCiAccount] = useState<CIAccount | null>(null);
+    const [cpAccount, setCpAccount] = useState<CPAccount | null>(null);
     const [metadata, setMetadata] = useState<IPMetadata | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPurchasing, setIsPurchasing] = useState(false);
@@ -43,6 +48,16 @@ const ProductDetailPage: React.FC = () => {
     const [isUploadingNewCover, setIsUploadingNewCover] = useState(false);
     const [pinataGateway, setPinataGateway] = useState<string>('');
     const [pinataJWT, setPinataJWT] = useState<string>('');
+    const [isWithdrawing, setIsWithdrawing] = useState(false);
+    const [isBonusLoading, setIsBonusLoading] = useState(false);
+    const [tokenDecimals, setTokenDecimals] = useState(0)
+
+    const [withdrawPopoverVisible, setWithdrawPopoverVisible] = useState(false);
+    const [bonusPopoverVisible, setBonusPopoverVisible] = useState(false);
+    const [withdrawnProfit, setWithdrawnProfit] = useState<number>(0);
+    const [totalWithdrawable, setTotalWithdrawable] = useState<number>(0);
+    const [claimedBonus, setClaimedBonus] = useState<number>(0);
+    const [totalBonus, setTotalBonus] = useState<number>(0);
 
     useEffect(() => {
         const fetchProductDetails = async () => {
@@ -55,6 +70,14 @@ const ProductDetailPage: React.FC = () => {
             try {
                 const fetchedIpAccount = await getIPAccount(new PublicKey(id));
                 setIpAccount(fetchedIpAccount);
+                let fetchedCIAccount: CIAccount | null = null;
+                if (fetchedIpAccount) {
+                    const fetchedCPAccount = await getPayment(fetchedIpAccount.ipid);
+                    setCpAccount(fetchedCPAccount);
+                    fetchedCIAccount = await getCIAccount(fetchedIpAccount.ipid);
+                    setCiAccount(fetchedCIAccount);
+                    fetchedCIAccount && await fetchTokenDecimals(fetchedCIAccount.tokenMint.toBase58())
+                }
 
                 if (fetchedIpAccount?.intro) {
                     const metadataResponse = await fetch(fetchedIpAccount.intro);
@@ -87,6 +110,24 @@ const ProductDetailPage: React.FC = () => {
 
         fetchProductDetails();
     }, [id, wallet.publicKey, program]);
+
+    useEffect(() => {
+        if (ciAccount) {
+            const totalAmount = ciAccount.currcount * ciAccount.price;
+            const withdrawnAmount = (ciAccount.withdrawalCount || 0) * ciAccount.price;
+            setTotalWithdrawable(totalAmount / (10 ** tokenDecimals))
+            setWithdrawnProfit(withdrawnAmount / (10 ** tokenDecimals))
+        }
+    }, [ciAccount, tokenDecimals]);
+
+    useEffect(() => {
+        if (ciAccount && cpAccount) {
+            const potentialBonus = ciAccount.currcount > 0 ? Math.max(0, ((ciAccount.currcount - ciAccount.goalcount) * ciAccount.price) / ciAccount.currcount) : 0;
+            const alreadyClaimedBonus = cpAccount.withdrawal || 0;
+            setTotalBonus(potentialBonus / (10 ** tokenDecimals));
+            setClaimedBonus(alreadyClaimedBonus / (10 ** tokenDecimals));
+        }
+    }, [ciAccount, cpAccount, tokenDecimals]);
 
     const handlePurchase = async () => {
         if (!ipAccount || !id) return;
@@ -183,6 +224,54 @@ const ProductDetailPage: React.FC = () => {
         }
     };
 
+    const handleWithdraw = async () => {
+        if (!id) return;
+        setIsWithdrawing(true);
+        try {
+            await txWithdraw({ ipid: new PublicKey(id) });
+            toast.success('Withdrawal successful!');
+        } catch (error) {
+            console.error('Withdrawal failed:', error);
+            toast.error('Withdrawal failed.');
+        } finally {
+            setIsWithdrawing(false);
+        }
+    };
+
+    const handleBonus = async () => {
+        if (!id) return;
+        setIsBonusLoading(true);
+        try {
+            await txBonus({ ipid: new PublicKey(id) });
+            toast.success('Bonus received!');
+        } catch (error) {
+            console.error('Bonus payment failed:', error);
+            toast.error('Bonus payment failed.');
+        } finally {
+            setIsBonusLoading(false);
+        }
+    };
+
+
+    const fetchTokenDecimals = useCallback(async (mintAddress: string) => {
+        try {
+            const connection = new Connection(_network, 'processed');
+            const mintInfo = await getMint(
+                connection,
+                new PublicKey(mintAddress),
+                undefined,
+                TOKEN_PROGRAM_ID
+            );
+            setTokenDecimals(mintInfo.decimals);
+            return mintInfo.decimals;
+        } catch (error) {
+            console.error('Error fetching token decimals:', error);
+            setTokenDecimals(0);
+            toast.error('Failed to fetch token decimals. Please check the Token Mint address.');
+            return null;
+        }
+    }, []);
+
     if (loading) {
         return <Skeleton/>;
     }
@@ -191,7 +280,7 @@ const ProductDetailPage: React.FC = () => {
         return <div className="text-center mt-8 text-red-500">Error: {error}</div>;
     }
 
-    if (!ipAccount || !metadata) {
+    if (!ipAccount || !metadata || !ciAccount) {
         return <div className="text-center mt-8">Intellectual Property not found.</div>;
     }
 
@@ -209,23 +298,67 @@ const ProductDetailPage: React.FC = () => {
                     <p className="text-sm text-gray-500">IPID: {ipAccount.ipid.toBase58()}</p>
 
                     <div className="flex items-center justify-between mt-8">
-                        <button
-                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
-                            onClick={handlePurchase}
-                            disabled={isPurchasing || !wallet.connected}
-                        >
-                            {isPurchasing ? 'Purchasing...' : hasPurchased ? 'Download' : 'Purchase and Download'}
-                        </button>
                         {!wallet.connected && <span className="text-gray-500">Please connect your wallet</span>}
-
-                        {isOwner && (
+                        <div className="flex">
                             <button
-                                className="mt-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                                onClick={openEditModal}
+                                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={handlePurchase}
+                                disabled={isPurchasing || !wallet.connected}
                             >
-                                Edit
+                                {isPurchasing ? 'Purchasing...' : hasPurchased ? 'Download' : 'Purchase and Download'}
                             </button>
-                        )}
+                            {hasPurchased && (
+                                <div className="relative">
+                                    <button
+                                        className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed ml-2"
+                                        onClick={handleBonus}
+                                        disabled={isBonusLoading || !wallet.connected}
+                                        onMouseEnter={() => setBonusPopoverVisible(true)}
+                                        onMouseLeave={() => setBonusPopoverVisible(false)}
+                                    >
+                                        {isBonusLoading ? 'Loading...' : 'Bonus'}
+                                    </button>
+                                    {bonusPopoverVisible && (
+                                        <div className="absolute left-0 -top-28 mt-2 w-64 bg-white border rounded shadow-md z-10 p-2">
+                                            <p className="text-sm text-gray-700">Total: {totalBonus.toString()}</p>
+                                            <p className="text-sm text-gray-700">Available: {claimedBonus.toString()}</p>
+                                            <p className="text-sm text-gray-700">Token : {ciAccount.tokenMint.toBase58().slice(0,8)}...</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex">
+                            {isOwner && (
+                                <div className="relative">
+                                    <button
+                                        className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onClick={handleWithdraw}
+                                        disabled={isWithdrawing}
+                                        onMouseEnter={() => setWithdrawPopoverVisible(true)}
+                                        onMouseLeave={() => setWithdrawPopoverVisible(false)}
+                                    >
+                                        {isWithdrawing ? 'Withdrawing...' : 'Withdraw'}
+                                    </button>
+                                    {withdrawPopoverVisible && (
+                                        <div className="absolute left-0 -top-28 mt-2 w-64 bg-white border rounded shadow-md z-10 p-2">
+                                            <p className="text-sm text-gray-700">Total: {totalWithdrawable}</p>
+                                            <p className="text-sm text-gray-700">Withdrawn: {withdrawnProfit}</p>
+                                            <p className="text-sm text-gray-700">Token Mint: {ciAccount.tokenMint.toBase58().slice(0,8)}...</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {isOwner && (
+                                <button
+                                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                                    onClick={openEditModal}
+                                >
+                                    Edit
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

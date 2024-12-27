@@ -1,29 +1,44 @@
+
 // src/app/publish/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useCreateIPAndEncrypt } from '@/services/solana/poip-service';
 import { useTxPublish } from '@/services/solana/solana-api';
 import { IPMetadata } from '@/services/solana/types';
-import { Keypair } from '@solana/web3.js';
+import { Keypair, PublicKey, Connection } from '@solana/web3.js';
 import toast from 'react-hot-toast';
 import { uploadFile } from '@/services/solana/pinata';
+import { getMint, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { _network } from '@/services/solana/solana-api';
+
+const COMMON_TOKENS = [
+    { name: 'wSOL', address: 'So11111111111111111111111111111111111111112' },
+    { name: 'USDC', address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'},
+    { name: 'USDT', address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'}
+    // Add more common tokens here, e.g., USDT, USDC
+];
+
+const MANUAL_INPUT_VALUE = 'MANUAL_INPUT';
 
 const PublishPage: React.FC = () => {
 
     const [file, setFile] = useState<File | null>(null);
+    const [priceInput, setPriceInput] = useState<string>('');
     const [price, setPrice] = useState<number>(0);
     const [goalCount, setGoalCount] = useState<number>(0);
     const [maxCount, setMaxCount] = useState<number>(0);
+    const [tokenMint, setTokenMint] = useState<string>('');
+    const [tokenDecimals, setTokenDecimals] = useState<number | null>(null);
     const [isEncrypting, setIsEncrypting] = useState<boolean>(false);
     const [isPublishing, setIsPublishing] = useState<boolean>(false);
     const [isUploadingCover, setIsUploadingCover] = useState<boolean>(false);
-    const [pinataGateway, setPinataGateway] = useState<string>();
-    const [pinataJWT, setPinataJWT] = useState<string>();
+    const [pinataGateway, setPinataGateway] = useState<string>('');
+    const [pinataJWT, setPinataJWT] = useState<string>('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalData, setModalData] = useState<{ ipid: string; key: string; iv: string } | null>(null);
     const [metadata, setMetadata] = useState<IPMetadata>({
-        ipid: Keypair.generate().publicKey, // Initialize with a randomly generated IPID
+        ipid: Keypair.generate().publicKey,
         title: '',
         filename: '',
         cover: '',
@@ -31,6 +46,7 @@ const PublishPage: React.FC = () => {
         links: [''],
         sksUrl: ''
     });
+    const [showManualTokenInput, setShowManualTokenInput] = useState(false);
 
     const createIPAndEncrypt = useCreateIPAndEncrypt();
     const publishIP = useTxPublish();
@@ -109,13 +125,87 @@ const PublishPage: React.FC = () => {
             toast.error('Cover upload failed:');
         } finally {
             setIsUploadingCover(false);
-            // Reset the cover file input value to allow re-uploading the same file
             const coverInput = document.getElementById('cover-upload') as HTMLInputElement;
             if (coverInput) {
                 coverInput.value = '';
             }
         }
     };
+
+    const fetchTokenDecimals = useCallback(async (mintAddress: string) => {
+        try {
+            const connection = new Connection(_network, 'processed');
+            const mintInfo = await getMint(
+                connection,
+                new PublicKey(mintAddress),
+                undefined,
+                TOKEN_PROGRAM_ID
+            );
+            setTokenDecimals(mintInfo.decimals);
+            return mintInfo.decimals;
+        } catch (error) {
+            console.error('Error fetching token decimals:', error);
+            setTokenDecimals(null);
+            toast.error('Failed to fetch token decimals. Please check the Token Mint address.');
+            return null;
+        }
+    }, []);
+
+    const handleTokenMintChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedValue = e.target.value;
+        if (selectedValue === MANUAL_INPUT_VALUE) {
+            setShowManualTokenInput(true);
+            setTokenMint('');
+            setTokenDecimals(null);
+            setPriceInput('');
+            setPrice(0);
+        } else {
+            setShowManualTokenInput(false);
+            setTokenMint(selectedValue);
+            if (selectedValue) {
+                fetchTokenDecimals(selectedValue);
+            } else {
+                setTokenDecimals(null);
+                setPriceInput('');
+                setPrice(0);
+            }
+        }
+    };
+
+    const handleManualTokenMintInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newMint = e.target.value;
+        setTokenMint(newMint);
+        if (newMint) {
+            fetchTokenDecimals(newMint);
+        } else {
+            setTokenDecimals(null);
+            setPriceInput('');
+            setPrice(0);
+        }
+    };
+
+    const handlePriceInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const inputVal = e.target.value;
+        setPriceInput(inputVal);
+        if (tokenDecimals !== null && inputVal) {
+            const numPrice = parseFloat(inputVal);
+            if (!isNaN(numPrice)) {
+                setPrice(numPrice * Math.pow(10, tokenDecimals));
+            } else {
+                setPrice(0);
+            }
+        } else {
+            setPrice(0);
+        }
+    };
+
+    useEffect(() => {
+        if (!tokenMint) {
+            setPriceInput('');
+            setPrice(0);
+            setTokenDecimals(null);
+        }
+    }, [tokenMint]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -128,6 +218,8 @@ const PublishPage: React.FC = () => {
             !price ||
             !goalCount ||
             !maxCount ||
+            !tokenMint ||
+            tokenDecimals === null ||
             !metadata.title ||
             !metadata.cover ||
             !metadata.description ||
@@ -135,7 +227,7 @@ const PublishPage: React.FC = () => {
             !metadata.filename ||
             !pinataGateway ||
             !pinataJWT) {
-            toast.error('Please fill in all required fields.');
+            toast.error('Please fill in all required fields and ensure Token Mint is valid.');
             return;
         }
 
@@ -155,25 +247,28 @@ const PublishPage: React.FC = () => {
 
             toast.success('IP account created successfully, file encrypted and uploaded!');
 
-            // After successful IP product creation, call useTxPublish to publish
             setIsPublishing(true);
             await publishIP({
                 ipid: metadata.ipid,
                 price: price,
                 goalcount: goalCount,
                 maxcount: maxCount,
+                tokenMint: new PublicKey(tokenMint),
             });
             setIsPublishing(false);
 
             toast.success('IP product published successfully!');
 
-            // Reset the form, but keep the generated IPID
             setFile(null);
+            setPriceInput('');
             setPrice(0);
             setGoalCount(0);
             setMaxCount(0);
+            setTokenMint('');
+            setTokenDecimals(null);
+            setShowManualTokenInput(false);
             setMetadata({
-                ipid: metadata.ipid, // Keep the generated IPID
+                ipid: metadata.ipid,
                 title: '',
                 filename: '',
                 cover: '',
@@ -189,11 +284,13 @@ const PublishPage: React.FC = () => {
         }
     };
 
+    const isPriceInputDisabled = !tokenMint;
+
     return (
         <div>
             <div>
                 <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-2 mt-2">
-                    
+
                     <div className="mb-4 flex items-center">
                         <span className="mr-5 font-extrabold text-2xl">Publish</span>
                         <input
@@ -260,8 +357,8 @@ const PublishPage: React.FC = () => {
                     </div>
 
                     <div className="mb-4 flex items-center">
-                        <label 
-                            htmlFor="title" 
+                        <label
+                            htmlFor="title"
                             className="block text-gray-700 font-bold mb-2 mr-4">
                             Title
                         </label>
@@ -277,8 +374,8 @@ const PublishPage: React.FC = () => {
                     </div>
 
                     <div className="mb-4 flex items-center">
-                        <label 
-                            htmlFor="filename" 
+                        <label
+                            htmlFor="filename"
                             className="block text-gray-700 font-bold mb-2 mr-4">
                             Filename
                         </label>
@@ -369,7 +466,7 @@ const PublishPage: React.FC = () => {
                     </div>
 
                     <div className="mb-4 flex space-x-4">
-                        <div className="w-1/3">
+                        <div className="w-1/4">
                             <label htmlFor="price" className="block text-gray-700 font-bold mb-2">
                                 Price
                             </label>
@@ -377,13 +474,40 @@ const PublishPage: React.FC = () => {
                                 type="number"
                                 id="price"
                                 className="shadow appearance-none border-b w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none"
-                                value={price}
-                                onChange={(e) => setPrice(Number(e.target.value))}
+                                value={priceInput}
+                                onChange={handlePriceInputChange}
                                 placeholder="Set Price"
                                 required
+                                disabled={isPriceInputDisabled}
                             />
                         </div>
-                        <div className="w-1/3">
+                        <div className="w-1/4">
+                            <label htmlFor="tokenMint" className="block text-gray-700 font-bold mb-2">
+                                Token Mint
+                            </label>
+                            <select
+                                id="tokenMint"
+                                className="shadow appearance-none border-b w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none"
+                                value={showManualTokenInput ? MANUAL_INPUT_VALUE : tokenMint}
+                                onChange={handleTokenMintChange}
+                                required
+                            >
+                                {COMMON_TOKENS.map((token) => (
+                                    <option key={token.address} value={token.address}>{token.name}</option>
+                                ))}
+                                <option value={MANUAL_INPUT_VALUE}>Others</option>
+                            </select>
+                            {showManualTokenInput && (
+                                <input
+                                    type="text"
+                                    className="shadow appearance-none border-b w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none mt-2"
+                                    placeholder="Token Address"
+                                    value={tokenMint}
+                                    onChange={handleManualTokenMintInputChange}
+                                />
+                            )}
+                        </div>
+                        <div className="w-1/4">
                             <label htmlFor="goalCount" className="block text-gray-700 font-bold mb-2">
                                 Goal Count
                             </label>
@@ -397,7 +521,7 @@ const PublishPage: React.FC = () => {
                                 required
                             />
                         </div>
-                        <div className="w-1/3">
+                        <div className="w-1/4">
                             <label htmlFor="maxCount" className="block text-gray-700 font-bold mb-2">
                                 Max Count
                             </label>
@@ -417,7 +541,7 @@ const PublishPage: React.FC = () => {
                         <button
                             className="bg-indigo-600 hover:bg-indigo-800 text-white font-bold py-1 px-4 rounded focus:outline-none focus:shadow-outline text-xl"
                             type="submit"
-                            disabled={isEncrypting || isPublishing || isUploadingCover}
+                            disabled={isEncrypting || isPublishing || isUploadingCover || isPriceInputDisabled}
                         >
                             {isEncrypting ? 'Encrypting...' : isPublishing ? 'Publishing...' : isUploadingCover ? 'Uploading...' : 'Publish'}
                         </button>
@@ -433,7 +557,6 @@ const PublishPage: React.FC = () => {
         </div>
     );
 };
-
 
 const ConfirmationModal: React.FC<{ isOpen: boolean; onClose: () => void; data: { ipid: string; key: string; iv: string } | null }> = ({
     isOpen,

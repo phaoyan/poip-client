@@ -80,6 +80,15 @@ const PageTitleBar: React.FC<PageTitleBarProps> = () => {
           }`}>
             Product
           </span>
+          <a 
+           href="https://github.com/phaoyan/poip-client" target="_blank" rel="noopener noreferrer"
+           className={`text-2xl font-medium text-gray-500 ${
+            pathname?.startsWith('/products/')
+            ? 'text-indigo-600 font-semibold'
+            : ''
+          }`}>
+            Github
+          </a>
         </nav>
         <div className="flex items-center space-x-4">
           {isEditing ? (

@@ -93,20 +93,20 @@ export const usePurchaseAndDecrypt = () => {
             const sksUrl = ipMetadata.sksUrl
             const ping = await pingSkServer(sksUrl, ipid.toBase58())
             if(!ping) {
-                toast.error("密钥服务暂未运行，请联系作者部署密钥服务...")  
+                toast.error("Secret Key Service Not Running, Please Contact Author...")  
                 return
             }
 
             // 2. Initiate Solana Purchase Transaction
             if (!await getPayment(ipid)) {
                 try {
-                    await txPay(ipid);
+                    await txPay({ipid});
                 } catch (err: any) {
                     console.error("Transaction Fail ... ", err)
                     return
                 }
             } else {
-                toast.success("已有购买记录，直接获取资源 ... ")
+                toast.success("Already Purchased, Fetching Resources ... ")
             }
 
             // 3. Download Encrypted File from Pinata
@@ -255,7 +255,7 @@ export const useFetchDecryptionKey = () => {
 
 
     return async ({ ipid, sksUrl }: { ipid: PublicKey; sksUrl: string }): Promise<{ keyBase64: string, ivBase64: string } | null> => {
-        if (!wallet.publicKey || !wallet.signMessage || program) {
+        if (!wallet.publicKey || !wallet.signMessage || !program) {
             console.error("Wallet not connected or signMessage function not available.");
             return null;
         }
