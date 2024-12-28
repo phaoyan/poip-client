@@ -62,6 +62,7 @@ POIP基于区块链技术，其核心为一个智能合约，它的名称叫做�
 $$
 Amount = \frac{[(BuyerCount \times Price) - Max]}{BuyerCount} = Price - \frac{Max}{BuyerCount}
 $$
+
 接着用应得补偿金额减去已提现的金额，就可以计算出此次他应提现的金额。体现完成后，再将已提现金额更新为当前的
 
 应得补偿金额即可。
@@ -78,7 +79,7 @@ $$
 
 
 $$
-MaxBuyerCount\times Price - Max = MaxBuyerCount\times MaxCompensation \\
+MaxBuyerCount\times Price - Max = MaxBuyerCount\times MaxCompensation \\\\
 MaxBuyerCount = \frac{Max}{Price - MaxCompensation}
 $$
 
