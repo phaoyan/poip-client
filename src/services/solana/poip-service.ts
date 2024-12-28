@@ -2,13 +2,13 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { deleteFile, extractCid, uploadFile } from './pinata';
 import { useAnchorProgram, useGetIPAccount, useGetPayment, useTxCreateIPAccount, useTxPay, useTxUpdateIPAccountIntro } from './solana-api';
-import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
+import bs58 from 'bs58';
 import toast from 'react-hot-toast';
 import { saveAs } from 'file-saver';
 import { IP_PUBLIC, IPMetadata } from './types';
 import { PublicKey } from '@solana/web3.js';
 import forge from 'node-forge';
-import { BN } from 'bn.js';
+import BN from "bn.js";
 
 
 export const useCreateIPAndEncrypt = () => {

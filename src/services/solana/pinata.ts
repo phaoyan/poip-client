@@ -1,20 +1,15 @@
-import { PinataSDK as PinataIPFSSDK } from "pinata-web3";
+import { PinataSDK } from "pinata-web3";
 import toast from "react-hot-toast";
 
 
 export const getPinata = (pinataJwt: string, pinataGateway: string) => {
   try {
-    return new PinataIPFSSDK({ pinataJwt, pinataGateway });
+    return new PinataSDK({ pinataJwt, pinataGateway });
   } catch (error) {
     toast.error("Error initializing Pinata SDK. Please check your configuration.");
     console.error("Error initializing Pinata SDK:", error);
     throw new Error("Failed to initialize Pinata SDK.");
   }
-};
-
-export const getGroup = async (name: string, pinataJwt: string, pinataGateway: string) => {
-  const pinata = getPinata(pinataJwt, pinataGateway);
-  return (await pinata.groups.list().name(name).all()).at(0);
 };
 
 export const uploadFile = async (file: File, pinataJwt: string, pinataGateway: string) => {

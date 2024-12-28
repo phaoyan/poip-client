@@ -1,12 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react"
-import { PublicKey, SystemProgram, Connection } from "@solana/web3.js"
+import { PublicKey, SystemProgram, Connection, SYSVAR_RENT_PUBKEY, Transaction } from "@solana/web3.js"
 import idl from "./poip.json";
 import {Poip} from "./poip"
-import { AnchorProvider, BN, Program, web3 } from "@coral-xyz/anchor";
+import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import toast from "react-hot-toast";
 import { useState, useEffect, useCallback } from 'react';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { BN } from "bn.js";
 
 export const PROGRAM_ID_POIP = new PublicKey(idl.metadata.address)
 
@@ -163,7 +164,7 @@ export const useTxPublish = ()=>{
                     systemProgram: SystemProgram.programId,
                     tokenProgram: TOKEN_PROGRAM_ID,
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                    rent: web3.SYSVAR_RENT_PUBKEY,
+                    rent: SYSVAR_RENT_PUBKEY,
                 }).rpc()
             toast.success(`Tx Publish Contract Success`)
         } catch (error: any) {
@@ -203,7 +204,7 @@ export const useTxPay = ()=>{
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                 }).instruction()
 
-            const transaction = new web3.Transaction().add(inst)
+            const transaction = new Transaction().add(inst)
             const signature   = await wallet.sendTransaction(transaction, _connection)
             const txMessage   = transaction.serializeMessage()
             toast.success(`Tx Pay Success`)

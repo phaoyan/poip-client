@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import ProductCard from '@/components/product/ProductCard';
-import { IPAccount } from '@/services/solana/types';
 import { useAnchorProgram, useGetAllIPAccounts, useGetAllPaymentAccounts, useGetIPAccount } from '@/services/solana/solana-api';
 import Skeleton from '@/components/layout/Skeleton';
 
@@ -12,8 +11,8 @@ const DashboardPage: React.FC = () => {
     const { publicKey } = useWallet();
     const program = useAnchorProgram();
 
-    const [publishedIPs, setPublishedIPs] = useState<IPAccount[]>([]);
-    const [purchasedIPs, setPurchasedIPs] = useState<IPAccount[]>([]);
+    const [publishedIPs, setPublishedIPs] = useState<any[]>([]);
+    const [purchasedIPs, setPurchasedIPs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

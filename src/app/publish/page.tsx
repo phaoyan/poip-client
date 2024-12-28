@@ -15,8 +15,7 @@ import { _network } from '@/services/solana/solana-api';
 const COMMON_TOKENS = [
     { name: 'wSOL', address: 'So11111111111111111111111111111111111111112' },
     { name: 'USDC', address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'},
-    { name: 'USDT', address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'}
-    // Add more common tokens here, e.g., USDT, USDC
+    { name: 'USDT', address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'},
 ];
 
 const MANUAL_INPUT_VALUE = 'MANUAL_INPUT';
@@ -478,7 +477,6 @@ const PublishPage: React.FC = () => {
                                 onChange={handlePriceInputChange}
                                 placeholder="Set Price"
                                 required
-                                disabled={isPriceInputDisabled}
                             />
                         </div>
                         <div className="w-1/4">

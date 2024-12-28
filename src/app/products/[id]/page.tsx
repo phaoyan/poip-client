@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { CIAccount, CPAccount, IP_PUBLIC, IPMetadata } from '@/services/solana/types';
+import { IP_PUBLIC, IPMetadata } from '@/services/solana/types';
 import { useAnchorProgram, useGetIPAccount, useGetPayment, useTxWithdraw, useTxBonus, useGetContractAccount, _network } from '@/services/solana/solana-api';
 import { usePurchaseAndDecrypt, useUpdateIntroFile } from '@/services/solana/poip-service';
 import { Connection, PublicKey } from '@solana/web3.js';
@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 import { uploadFile, extractCid, deleteFile } from '@/services/solana/pinata';
 import Skeleton from '@/components/layout/Skeleton';
 import { getMint, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { BN } from 'bn.js';
+import BN from 'bn.js';
 
 const ProductDetailPage: React.FC = () => {
     const params = useParams();
