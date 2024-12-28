@@ -103,32 +103,6 @@ export const useTxDeleteIPAccount = ()=>{
     }
 }
 
-export const useTxUpdateIPAccountLink = ()=>{
-    const wallet = useWallet()
-    const program = useAnchorProgram()
-
-    return async (ipid: PublicKey, newLink: string)=>{
-        if (!program) {
-            toast.error("Program not initialized.");
-            return;
-        }
-        try {
-            const ipAccount = PublicKey.findProgramAddressSync([Buffer.from("ip"),   ipid.toBuffer()], PROGRAM_ID_POIP)[0]
-            await program.methods
-                .updateIpAccountLink(ipid, newLink)
-                .accounts({
-                    ipAccount: ipAccount,
-                    signer: wallet.publicKey!,
-                    systemProgram: SystemProgram.programId
-                }).rpc()
-            toast.success(`Tx Update Ip Account Link Success`)
-        } catch (error: any) {
-            toast.error(`Transaction Fail...`)
-            console.error(error)
-        }
-    }
-}
-
 export const useTxUpdateIPAccountIntro = ()=>{
     const wallet = useWallet()
     const program = useAnchorProgram()

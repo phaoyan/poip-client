@@ -63,36 +63,6 @@ export type Poip = {
       ]
     },
     {
-      "name": "updateIpAccountLink",
-      "accounts": [
-        {
-          "name": "ipAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "ipid",
-          "type": "publicKey"
-        },
-        {
-          "name": "value",
-          "type": "string"
-        }
-      ]
-    },
-    {
       "name": "updateIpAccountIntro",
       "accounts": [
         {
@@ -526,36 +496,6 @@ export const IDL: Poip = {
         {
           "name": "ipid",
           "type": "publicKey"
-        }
-      ]
-    },
-    {
-      "name": "updateIpAccountLink",
-      "accounts": [
-        {
-          "name": "ipAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "ipid",
-          "type": "publicKey"
-        },
-        {
-          "name": "value",
-          "type": "string"
         }
       ]
     },

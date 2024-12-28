@@ -1,7 +1,7 @@
 // integration.ts
 import { useWallet } from '@solana/wallet-adapter-react';
 import { deleteFile, extractCid, uploadFile } from './pinata';
-import { useAnchorProgram, useGetIPAccount, useGetPayment, useTxCreateIPAccount, useTxPay, useTxUpdateIPAccountIntro, useTxUpdateIPAccountLink } from './solana-api';
+import { useAnchorProgram, useGetIPAccount, useGetPayment, useTxCreateIPAccount, useTxPay, useTxUpdateIPAccountIntro } from './solana-api';
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import toast from 'react-hot-toast';
 import { saveAs } from 'file-saver';
@@ -189,52 +189,6 @@ export const useUpdateIntroFile = () => {
             console.error('Error updating intro file:', error);
             toast.error(`Error updating intro file: ${error}`);
         }
-    };
-};
-
-export const useUpdateLinkFile = () => {
-    const program = useAnchorProgram();
-    const getIPAccount = useGetIPAccount();
-    const updateIPAccountLink = useTxUpdateIPAccountLink();
-
-    return async (ipid: PublicKey, newLinkFile: File, pinataJwt: string, pinataGateway: string) => {
-        try {
-            if(!program) return
-
-            // 2. Get the existing IP Account (Optional but Recommended)
-            const existingIPAccount = await getIPAccount(ipid);
-            if (!existingIPAccount) {
-                console.error('IP Account not found:', ipid);
-                toast.error('IP Account not found.');
-                return;
-            }
-
-            // 1. Upload the new link file to IPFS using Pinata
-            const linkResponse = await uploadFile(newLinkFile, pinataJwt, pinataGateway);
-            const newLinkIpfsHash = linkResponse.IpfsHash;
-            const newLink = `${pinataGateway}/ipfs/${newLinkIpfsHash}`;
-
-            console.log('New link file uploaded to IPFS with CID:', newLinkIpfsHash);
-            console.log('New Link:', newLink);
-
-
-
-            // 3. Update the IP Account with the new link using useTxUpdateIPAccountLink
-            await updateIPAccountLink(ipid, newLink);
-
-
-            // 4. Delete Original File
-            const oriCid = extractCid(existingIPAccount.link)
-            oriCid && await deleteFile(oriCid, pinataJwt, pinataGateway)
-
-
-            toast.success(`IP Account link updated successfully for IPID: ${ipid}`);
-
-        } catch (error: any) {
-            console.error('Error updating link file:', error);
-            toast.error(`Error updating link file: ${error}`);
-        }
-
     };
 };
 
