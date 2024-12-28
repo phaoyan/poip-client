@@ -3,11 +3,10 @@ import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react"
 import { PublicKey, SystemProgram, Connection } from "@solana/web3.js"
 import idl from "./poip.json";
 import {Poip} from "./poip"
-import { AnchorProvider, BN, Program, ProgramAccount, web3 } from "@coral-xyz/anchor";
+import { AnchorProvider, BN, Program, web3 } from "@coral-xyz/anchor";
 import toast from "react-hot-toast";
-import { CPAccount, IPAccount } from "./types";
 import { useState, useEffect, useCallback } from 'react';
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 export const PROGRAM_ID_POIP = new PublicKey(idl.metadata.address)
 
@@ -343,7 +342,7 @@ export const useGetPaymentWithAddress = ()=>{
 
 export const useGetIPAccount  = ()=>{
     const program = useAnchorProgram()
-    return async (ipid: PublicKey): Promise<IPAccount | null> =>{
+    return async (ipid: PublicKey) =>{
         if (!program) {
             toast.error("Program not initialized.");
             return null;
@@ -355,7 +354,7 @@ export const useGetIPAccount  = ()=>{
 
 export const useGetAllIPAccounts = ()=>{
     const program = useAnchorProgram()
-    return async (): Promise<ProgramAccount<IPAccount>[]> =>{
+    return async ()=>{
         if (!program) {
             toast.error("Program not initialized.");
             return [];
@@ -366,7 +365,7 @@ export const useGetAllIPAccounts = ()=>{
 
 export const useGetAllPaymentAccounts = ()=>{
     const program = useAnchorProgram()
-    return async (): Promise<ProgramAccount<CPAccount>[]>=>{
+    return async ()=>{
         if (!program) {
             toast.error("Program not initialized.");
             return [];
@@ -377,7 +376,7 @@ export const useGetAllPaymentAccounts = ()=>{
 
 export const useGetContractAccount = ()=>{
     const program = useAnchorProgram()
-    return async (ipid: PublicKey): Promise<any> =>{
+    return async (ipid: PublicKey) =>{
         if (!program) {
             toast.error("Program not initialized.");
             return [];

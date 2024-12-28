@@ -346,6 +346,10 @@ export type Poip = {
         "kind": "struct",
         "fields": [
           {
+            "name": "ownership",
+            "type": "u64"
+          },
+          {
             "name": "ipid",
             "type": "publicKey"
           },
@@ -360,10 +364,6 @@ export type Poip = {
           {
             "name": "owner",
             "type": "publicKey"
-          },
-          {
-            "name": "ownership",
-            "type": "u64"
           }
         ]
       }
@@ -813,6 +813,10 @@ export const IDL: Poip = {
         "kind": "struct",
         "fields": [
           {
+            "name": "ownership",
+            "type": "u64"
+          },
+          {
             "name": "ipid",
             "type": "publicKey"
           },
@@ -827,10 +831,6 @@ export const IDL: Poip = {
           {
             "name": "owner",
             "type": "publicKey"
-          },
-          {
-            "name": "ownership",
-            "type": "u64"
           }
         ]
       }

@@ -346,6 +346,10 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "ownership",
+            "type": "u64"
+          },
+          {
             "name": "ipid",
             "type": "publicKey"
           },
@@ -360,10 +364,6 @@
           {
             "name": "owner",
             "type": "publicKey"
-          },
-          {
-            "name": "ownership",
-            "type": "u64"
           }
         ]
       }

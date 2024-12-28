@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { CIAccount, CPAccount, IPAccount, IPMetadata } from '@/services/solana/types';
+import { CIAccount, CPAccount, IP_PUBLIC, IPMetadata } from '@/services/solana/types';
 import { useAnchorProgram, useGetIPAccount, useGetPayment, useTxWithdraw, useTxBonus, useGetContractAccount, _network } from '@/services/solana/solana-api';
 import { usePurchaseAndDecrypt, useUpdateIntroFile } from '@/services/solana/poip-service';
 import { Connection, PublicKey } from '@solana/web3.js';
@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { uploadFile, extractCid, deleteFile } from '@/services/solana/pinata';
 import Skeleton from '@/components/layout/Skeleton';
 import { getMint, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { BN } from 'bn.js';
 
 const ProductDetailPage: React.FC = () => {
     const params = useParams();
@@ -22,16 +23,15 @@ const ProductDetailPage: React.FC = () => {
 
     const getIPAccount       = useGetIPAccount();
     const getCIAccount       = useGetContractAccount();
-    const getCPAccount       = useGetPayment();
     const getPayment         = useGetPayment();
     const purchaseAndDecrypt = usePurchaseAndDecrypt();
     const updateIntroFile    = useUpdateIntroFile();
     const txWithdraw         = useTxWithdraw();
     const txBonus            = useTxBonus();
 
-    const [ipAccount, setIpAccount] = useState<IPAccount | null>(null);
-    const [ciAccount, setCiAccount] = useState<CIAccount | null>(null);
-    const [cpAccount, setCpAccount] = useState<CPAccount | null>(null);
+    const [ipAccount, setIpAccount] = useState<any | null>(null);
+    const [ciAccount, setCiAccount] = useState<any | null>(null);
+    const [cpAccount, setCpAccount] = useState<any | null>(null);
     const [metadata, setMetadata] = useState<IPMetadata | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPurchasing, setIsPurchasing] = useState(false);
@@ -59,6 +59,9 @@ const ProductDetailPage: React.FC = () => {
     const [claimedBonus, setClaimedBonus] = useState<number>(0);
     const [totalBonus, setTotalBonus] = useState<number>(0);
 
+    const [secretKey, setSecretKey] = useState<string | null>(null)
+    const [iv, setIV] = useState<string | null>(null)
+
     useEffect(() => {
         const fetchProductDetails = async () => {
             if (!id || !wallet || !program) return;
@@ -70,7 +73,7 @@ const ProductDetailPage: React.FC = () => {
             try {
                 const fetchedIpAccount = await getIPAccount(new PublicKey(id));
                 setIpAccount(fetchedIpAccount);
-                let fetchedCIAccount: CIAccount | null = null;
+                let fetchedCIAccount: any | null = null;
                 if (fetchedIpAccount) {
                     const fetchedCPAccount = await getPayment(fetchedIpAccount.ipid);
                     setCpAccount(fetchedCPAccount);
@@ -90,6 +93,8 @@ const ProductDetailPage: React.FC = () => {
                         setNewDescription(metadataData.description);
                         setNewLinksInput(metadataData.links.join(','));
                         setNewSksUrl(metadataData.sksUrl);
+                        setSecretKey(metadataData.secretKey || null);
+                        setIV(metadataData.iv || null);
                     } else {
                         console.error("Failed to fetch IP Metadata:", metadataResponse);
                         setError("Failed to fetch IP Metadata.");
@@ -133,7 +138,10 @@ const ProductDetailPage: React.FC = () => {
         if (!ipAccount || !id) return;
         try {
             setIsPurchasing(true);
-            const purchased = await purchaseAndDecrypt({ ipid: new PublicKey(id) });
+            const purchased =
+                (!!metadata && metadata.secretKey && metadata.iv) ?
+                await purchaseAndDecrypt({ ipid: new PublicKey(id), secret: {key: metadata.secretKey, iv: metadata.iv}}) :
+                await purchaseAndDecrypt({ ipid: new PublicKey(id) });
             setIsPurchasing(false);
             setHasPurchased(!!purchased);
         } catch (error) {
@@ -156,6 +164,17 @@ const ProductDetailPage: React.FC = () => {
             setNewDescription(metadata.description);
             setNewLinksInput(metadata.links.join(','));
             setNewSksUrl(metadata.sksUrl);
+            setSecretKey(metadata.secretKey || null);
+            setIV(metadata.iv || null);
+        } else {
+            setNewTitle('');
+            setNewFilename('');
+            setNewCover(null);
+            setNewDescription('');
+            setNewLinksInput('');
+            setNewSksUrl('');
+            setSecretKey(null);
+            setIV(null);
         }
     };
 
@@ -177,6 +196,8 @@ const ProductDetailPage: React.FC = () => {
                 description: newDescription,
                 links: linksArray,
                 sksUrl: newSksUrl,
+                secretKey: secretKey || undefined,
+                iv: iv || undefined,
             };
 
             // If a new cover file is selected, upload it first
@@ -252,7 +273,6 @@ const ProductDetailPage: React.FC = () => {
         }
     };
 
-
     const fetchTokenDecimals = useCallback(async (mintAddress: string) => {
         try {
             const connection = new Connection(_network, 'processed');
@@ -293,9 +313,27 @@ const ProductDetailPage: React.FC = () => {
                     {metadata.cover && (<img src={metadata.cover} alt={`${metadata.title} Cover`} className="w-full h-auto rounded mb-3" />)}
                     <h1 className="text-3xl font-extrabold mb-4">{metadata.title}</h1>
                     <p className="text-gray-700 mb-6">{metadata.description}</p>
-                    <p className="text-sm text-gray-500">Filename: {metadata.filename}</p>
-                    <p className="text-sm text-gray-500">SKS URL: {metadata.sksUrl}</p>
-                    <p className="text-sm text-gray-500">IPID: {ipAccount.ipid.toBase58()}</p>
+
+                    <div className="mt-4 flex">
+                        {ciAccount && (
+                        <div className="w-1/2">
+                            <p className="text-sm text-gray-500">
+                                Price: {parseFloat((ciAccount.price / Math.pow(10, tokenDecimals)).toFixed(tokenDecimals)).toString()} 
+                                ({ciAccount.goalcount.toString()} ~ {ciAccount.maxcount.toString()})
+                            </p>
+                            <p className="text-sm text-gray-500">
+                                Token: {ciAccount.tokenMint.toBase58().slice(0, 8)}...{ciAccount.tokenMint.toBase58().slice(-8)}
+                            </p>
+                        </div>)}
+                        <div className="w-1/2">
+                            <p className="text-sm text-gray-500">Filename: {metadata.filename}</p>
+                            <p className="text-sm text-gray-500">SKS URL: {metadata.sksUrl}</p>
+                        </div>
+
+                    </div>
+
+
+
 
                     <div className="flex items-center justify-between mt-8">
                         {!wallet.connected && <span className="text-gray-500">Please connect your wallet</span>}
@@ -305,7 +343,7 @@ const ProductDetailPage: React.FC = () => {
                                 onClick={handlePurchase}
                                 disabled={isPurchasing || !wallet.connected}
                             >
-                                {isPurchasing ? 'Purchasing...' : hasPurchased ? 'Download' : 'Purchase and Download'}
+                                {isPurchasing ? 'Purchasing...' : (hasPurchased || ipAccount.ownership.eq(new BN(IP_PUBLIC))) ? 'Download' : 'Purchase and Download'}
                             </button>
                             {hasPurchased && (
                                 <div className="relative">
@@ -321,7 +359,7 @@ const ProductDetailPage: React.FC = () => {
                                     {bonusPopoverVisible && (
                                         <div className="absolute left-0 -top-28 mt-2 w-64 bg-white border rounded shadow-md z-10 p-2">
                                             <p className="text-sm text-gray-700">Total: {totalBonus.toString()}</p>
-                                            <p className="text-sm text-gray-700">Available: {claimedBonus.toString()}</p>
+                                            <p className="text-sm text-gray-700">Claimed: {claimedBonus.toString()}</p>
                                             <p className="text-sm text-gray-700">Token : {ciAccount.tokenMint.toBase58().slice(0,8)}...</p>
                                         </div>
                                     )}
@@ -486,6 +524,31 @@ const ProductDetailPage: React.FC = () => {
                                     onChange={(e) => setPinataJWT(e.target.value)}
                                     placeholder="Pinata JWT"
                                     required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mb-4 flex space-x-4">
+                            <div className="w-1/2">
+                                <label htmlFor="secretKey" className="block text-gray-700 text-sm font-bold mb-2">SecretKey (Optional)</label>
+                                <input
+                                    type="text"
+                                    id="secretKey"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    placeholder="Secret Key"
+                                    value={secretKey || ''}
+                                    onChange={(e) => setSecretKey(e.target.value)}
+                                />
+                            </div>
+                            <div className="w-1/2">
+                                <label htmlFor="iv" className="block text-gray-700 text-sm font-bold mb-2">IV (Optional)</label>
+                                <input
+                                    type="text"
+                                    id="iv"
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    placeholder="IV"
+                                    value={iv || ''}
+                                    onChange={(e) => setIV(e.target.value)}
                                 />
                             </div>
                         </div>

@@ -1,20 +1,20 @@
 
 // src/components/product/ProductCard.tsx
 import React, { useState, useEffect } from 'react';
-import { IPAccount, IPMetadata } from '@/services/solana/types';
+import { IP_PUBLIC, IPMetadata } from '@/services/solana/types';
 import Link from 'next/link';
 import { useAnchorProgram, useGetContractAccount } from '@/services/solana/solana-api';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import BN from 'bn.js';
 
 interface ProductCardProps {
-  ipAccount: IPAccount;
+  ipAccount: any;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
   const [metadata, setMetadata] = useState<IPMetadata | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [metadataError, setMetadataError] = useState<string | null>(null);
-  const isPublic = ipAccount.ownership === 3; // Assuming IPOwnership 3 represents public
   const getContractAccount = useGetContractAccount();
   const program = useAnchorProgram()
   const [ciAccount, setCiAccount] = useState<any | null>(null);
@@ -62,15 +62,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
   }, [ipAccount.ipid, program]);
 
   return (
-    <div className="bg-white shadow rounded-lg p-4">
+    <div className="bg-white shadow rounded-lg p-4 flex justify-between flex-col">
       {loadingMetadata && <p className="text-gray-500">Loading product description...</p>}
       {metadataError && <p className="text-red-500">{metadataError}</p>}
       {metadata && (
-        <>
+        <div>
           {metadata.cover && (<img src={metadata.cover} alt={`${metadata.title} Cover`} className="w-full h-auto rounded mb-3" />)}
           {metadata.title && <p className="text-gray-600 mb-2 text-2xl font-extrabold">{metadata.title}</p>}
           <p className="text-gray-500 mb-3">{metadata.description || 'No description available'}</p>
-        </>
+        </div>
       )}
 
       <div>
@@ -90,7 +90,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ ipAccount }) => {
 
       <div className="flex items-center justify-between mt-2">
         <div>
-          {isPublic ? (
+          {ipAccount.ownership.eq(new BN(IP_PUBLIC)) ? (
             <span className="bg-green-100 text-green-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
               Public
             </span>

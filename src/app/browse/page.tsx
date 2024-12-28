@@ -2,7 +2,6 @@
 'use client'; // Mark this as a client component
 
 import React, { useState, useEffect } from 'react';
-import { IPAccount } from '@/services/solana/types'; // Import IP related type definitions
 import ProductCard from '@/components/product/ProductCard'; // Import Product Card component
 import { useAnchorProgram, useGetAllIPAccounts } from '@/services/solana/solana-api';
 import Skeleton from '@/components/layout/Skeleton';
@@ -11,7 +10,7 @@ import Skeleton from '@/components/layout/Skeleton';
 const BrowsePage: React.FC = () => {
     const program = useAnchorProgram();
     
-    const [ipAccounts, setIpAccounts] = useState<IPAccount[]>([]);
+    const [ipAccounts, setIpAccounts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const getAllIPAccounts = useGetAllIPAccounts()

@@ -12,7 +12,7 @@
 
 批判现有制度的同时，我们也必须正视一个现实：知识生产者的劳动需要被充分尊重和回报。知识的生产，是一项需要创造力、时间和精力的劳动，其价值不容忽视。因此，任何试图重新定义知识传播和所有权的尝试，都必须确保生产者能够获得与其劳动投入相称的报酬。
 
-然而，这种报酬并不必然通过知识产权的垄断性租金来实现。依靠新技术的创新，我们可以做到让知识生产者获得合理的收益，同时保证知识传播的公平性。例如，区块链技术的出现，为知识的公平分配提供了技术支持。通过区块链，我们可以实现一种全新的知识传播和支付模式：当读者购买某一知识产品时，其消费金额可以公平地分配给作者和其他读者。也就是说，作者在获得足够报酬后，知识的传播成本可以逐步分摊到所有消费者身上，最终实现知识的共享化和低成本化。
+然而，这种报酬并不必然通过知识产权的垄断性租金来实现。依靠新技术的创新，我们可以做到让知识生产者获得合理的收益，同时保证知识传播的公平性。区块链技术的出现，为知识的公平分配提供了技术支持。通过区块链，我们可以实现一种全新的知识传播和支付模式：当读者购买某一知识产品时，其消费金额可以公平地分配给作者和其他读者。也就是说，作者在获得足够报酬后，知识的传播成本可以逐步分摊到所有消费者身上，最终实现知识的共享化和低成本化。
 
 #### 尊重作者与读者的愿景
 
@@ -22,7 +22,7 @@
 
 #### POIP：知识公有化的温和尝试
 
-在这一背景下，POIP理念的提出，为知识的公共化提供了一个温和且可操作的路径。POIP允许作者通过设定一个不可能达成的目标（goalcount），继续维持现有的商业模式，同时也为知识的公有化打下基础。具体而言，作者可以选择在某一销售目标达到之前，继续对作品进行收费，而当这一目标达到时，作品将进入公共领域。这一设计尊重了作者的选择权，同时为知识的最终公共化提供了可能。
+在这一背景下，POIP理念的提出，为知识的公共化提供了一个温和且可操作的路径。一方面，POIP允许作者通过设定一个不可能达成的goalcount，继续维持现有的商业模式；另一方面，POIP让作者可以根据自己的劳动时间决定自己的酬劳上限，设定一个合理的goalcount，在销售达到goalcount后，接下来继续销售产生的利润将平均分配给所有购买者，直到达到maxcount后，知识产权就自动公有化。这一设计尊重了作者的选择权，同时为知识的最终公共化提供了可能。
 
 更重要的是，POIP并非仅仅是一种商业模式的调整，它还承载着更深远的社会意义。它试图引导一种新的观念：不仅知识的最终归宿应当是公有化，“利润”的最终归宿也应当是公有化。在这一体系下，通过集体的努力，知识的价值可以被更多人共享，而非被少数资本力量所垄断。
 
@@ -57,10 +57,14 @@ POIP基于区块链技术，其核心为一个智能合约，它的名称叫做�
    在新的购买者购买知识产品的使用权时，首先将他计入购买者名单中，此时购买者人数自然加一，接着将购买者所花的钱转账到合约的账户余额中。
 
    在一个已购买者想要提现补偿金额时，首先查看他已经提现的金额，然后计算当前时间节点下每个已购买者应得的补偿金额，可以用下列公式计算：
-   $$
-   Amount = \frac{[(BuyerCount \times Price) - Max]}{BuyerCount} = Price - \frac{Max}{BuyerCount}
-   $$
-   接着用应得补偿金额减去已提现的金额，就可以计算出此次他应提现的金额。体现完成后，再将已提现金额更新为当前的应得补偿金额即可。
+
+
+$$
+Amount = \frac{[(BuyerCount \times Price) - Max]}{BuyerCount} = Price - \frac{Max}{BuyerCount}
+$$
+接着用应得补偿金额减去已提现的金额，就可以计算出此次他应提现的金额。体现完成后，再将已提现金额更新为当前的
+
+应得补偿金额即可。
 
 基于上述逻辑，可以进一步降低购买的门槛，即将购买与立即提现补偿金额结合起来，购买者只需支付单价-当前应得补偿金额即可购买到使用权，但是在购买完成后立即将购买者的已提现金额设置为当前的应得补偿金额。
 
@@ -72,47 +76,45 @@ POIP基于区块链技术，其核心为一个智能合约，它的名称叫做�
 
 关于如何识别”当前每个购买者的应得补偿金达到补偿金上限“。应得补偿金与购买者总人数密切相关，因此实际上我们只需要持续对购买者总人数进行计数，当购买者总人数达到一定数量后，补偿金自然达到上限。具体而言，购买者总人数上限可以用如下公式计算：
 
-$$
-MaxBuyerCount\times Price - Max = MaxBuyerCount\times MaxCompensation \\\\
 
+$$
+MaxBuyerCount\times Price - Max = MaxBuyerCount\times MaxCompensation \\
 MaxBuyerCount = \frac{Max}{Price - MaxCompensation}
 $$
 
 
 
+# Project Concepts
 
+Knowledge, as the crystallization of human civilization, should naturally possess the characteristic of being boundless, serving as a shared public wealth for all humanity. However, under the current system centered on intellectual property (IP) rights, the boundless nature of knowledge has, to some extent, been subsumed into the interests of capital, restricting its free dissemination and sharing. By reexamining the true destination of knowledge, the labor value of its producers, and the possibilities offered by social technologies, we can explore a new path toward the public ownership of knowledge. This article, based on the concept of POIP (Public Ownership of IP), seeks to explore how technological and institutional innovation can achieve the genuine publicization of knowledge.
 
-# Project Concept
+#### The Nature and Destination of Knowledge: Beyond the Logic of Capital
 
-Knowledge, as the crystallization of human civilization, should embody its inherent boundlessness and be shared as a public asset for all humanity. However, the current intellectual property (IP)-centric system has, to some extent, constrained the free dissemination and sharing of knowledge by tying its boundless nature to capital interests. By reexamining the essence of knowledge, the value of its producers' labor, and the possibilities offered by societal technologies, we can explore a new path toward the public ownership of knowledge. This article builds on the concept of POIP (Public Ownership of Intellectual Property) and explores how technological and institutional innovation can enable the genuine publicization of knowledge.
+The essence of knowledge lies in its boundlessness. Unlike tangible goods that are consumed when used, knowledge can be amplified and expanded through dissemination, functioning as a public resource. Throughout history, many great ideas, technologies, and cultural achievements have generated tremendous social value through free dissemination. However, when knowledge becomes entangled within the logic of capital, its boundless nature is curtailed, even turning into a monopolized resource. The rightful destination of knowledge should not be capital but the public domain. This aligns not only with the intrinsic characteristics of knowledge but also with the basic principles of social equity.
 
-### The Essence and Destination of Knowledge: Transcending Capitalist Logic
+Under the current intellectual property regime, knowledge often becomes privatized, serving as a tool for capital to extract monopoly rents. Publishing companies and patent-holding entities frequently use the monopolistic nature of intellectual property to extract profits far exceeding the labor value inherent in the production of knowledge. Meanwhile, the true laborers of knowledge production—authors, scientists, and artists—may not receive rewards commensurate with their labor value. This institutional framework not only deviates from the principle that knowledge should serve society as a whole but also exacerbates inequalities in knowledge production and dissemination.
 
-The essence of knowledge lies in its boundlessness. Unlike material commodities that are consumed when used, knowledge is a public resource that can be amplified through dissemination. Historically, many great ideas, technologies, and cultural achievements have gained immense societal value through free and open sharing. However, when knowledge is subsumed under the logic of capital, its boundlessness is undermined, transforming it into a monopolized resource. The ultimate destination of knowledge should not be capital but the public domain. This respects the intrinsic characteristics of knowledge and aligns with the fundamental principles of social equity.
+#### Compensation for Knowledge Producers and Institutional Restructuring
 
-Under the current intellectual property system, knowledge is often privatized and becomes a tool for capital to extract monopolistic rents. Publishing companies or patent-holder corporations frequently profit far beyond the value of the labor contributed by the original creators—authors, scientists, and artists—who may not receive fair compensation for their contributions. This system fundamentally deviates from the original purpose of knowledge: to serve society as a whole. It also exacerbates inequality in the production and dissemination of knowledge.
+While critiquing the current system, we must also confront a reality: the labor of knowledge producers must be fully respected and compensated. The production of knowledge is an endeavor requiring creativity, time, and effort, and its value must not be overlooked. Therefore, any attempt to redefine the ownership and dissemination of knowledge must ensure that producers receive rewards proportional to their labor input.
 
-### Reshaping Compensation for Knowledge Producers and the System
+However, such compensation does not necessarily need to rely on monopoly rents derived from intellectual property rights. With innovations in technology, it is possible to ensure that knowledge producers receive fair returns while maintaining the fairness of knowledge dissemination. Blockchain technology, for instance, presents a technical avenue for the equitable distribution of knowledge. Through blockchain, we can implement a novel model for knowledge dissemination and payment: when users purchase a knowledge product, the payment can be equitably distributed among the creator and other consumers. In this way, once creators receive adequate compensation, the cost of knowledge dissemination can be gradually shared among all consumers, ultimately achieving the goals of shared and low-cost access to knowledge.
 
-While critiquing the existing system, we must confront a critical reality: the labor of knowledge producers must be respected and fairly compensated. Producing knowledge requires creativity, time, and effort, making it a kind of labor whose value cannot be overlooked. Any attempt to redefine ownership and dissemination of knowledge must ensure that producers receive rewards proportional to their labor.
+#### Respecting the Aspirations of Authors and Readers
 
-However, such rewards do not necessarily have to rely on monopolistic IP rents. Through technological innovation, we can ensure fair compensation for knowledge creators while preserving the equitable dissemination of knowledge. For instance, blockchain technology provides a foundation for the fair distribution of knowledge. Using blockchain, we can create an innovative model for knowledge dissemination and payment: when readers purchase a piece of knowledge, their payment can be fairly distributed among the author and previous consumers. In other words, after the author has received sufficient compensation, the cost of disseminating the knowledge can gradually be distributed among all consumers, ultimately achieving low-cost or even free sharing of knowledge.
+Rethinking the ownership and dissemination of knowledge concerns not only the interests of producers but also the aspirations of every knowledge consumer. Authors who cherish their works would ideally want their creations to reach a global audience rather than being confined to specific capitalists or platforms. Only when works are read and appreciated by more people can they achieve their greatest social value. Similarly, as readers, we would hope that the money we spend on acquiring knowledge contributes to the publicization of knowledge rather than merely becoming a source of monopolized profit for platforms or capital.
 
-### Respecting the Aspirations of Authors and Readers
+Currently, a significant portion of the price of many knowledge products consists of platform or capital extraction, rather than direct payment to the author. This not only discourages readers from consuming knowledge but also restricts its dissemination. If we can reduce or even eliminate such capital-driven intermediaries through new technological and institutional arrangements, both authors and readers will ultimately benefit.
 
-Reimagining ownership and dissemination of knowledge involves balancing the interests of both creators and consumers. True creators, who cherish their work, likely aspire for their creations to reach a global audience rather than being restricted to a particular capitalist or platform. Intellectual works can only achieve their maximum societal value when they are widely read, appreciated, and disseminated. From the reader's perspective, they would prefer that their payments contribute to the journey toward public access to knowledge rather than merely enriching platforms or monopolistic intermediaries.
+#### POIP: A Moderate Attempt at Knowledge Publicization
 
-Currently, a significant portion of the price of many knowledge products is taken by platforms or intermediaries rather than directly benefiting the creators. This not only dampens consumers' willingness to purchase but also limits the dissemination of knowledge. By reducing or eliminating these intermediary layers through technological and institutional reforms, both authors and readers can ultimately benefit from a system that better serves their interests.
+Against this backdrop, the concept of POIP offers a moderate and feasible pathway toward the publicization of knowledge. On one hand, POIP allows authors to maintain the current commercial model by setting an unattainable goal count. On the other hand, it enables authors to determine their own upper limit of remuneration based on their labor input by setting a reasonable goal count. Once this goal count is reached, the subsequent profits generated through continued sales are distributed equally among all purchasers. After a maximum count is reached, the intellectual property automatically enters the public domain. This design respects the autonomy of authors while also paving the way for the eventual publicization of knowledge.
 
-### POIP: A Gentle Attempt at Knowledge Publicization
+More importantly, POIP is not merely an adjustment to a commercial model; it carries deeper societal implications. It seeks to foster a new perspective: not only should the ultimate destination of knowledge be publicization, but the ultimate destination of "profits" should also be publicization. Within this system, through collective effort, the value of knowledge can be shared by more individuals, rather than being monopolized by a few powerful capital entities.
 
-Against this backdrop, the POIP concept offers a moderate and practical pathway toward the publicization of knowledge. POIP allows authors to maintain their current commercial models while laying a foundation for the publicization of knowledge by setting an unattainable sales goal (goal count). Specifically, authors can choose to continue charging for their works until a certain sales goal is achieved, at which point the work enters the public domain. This design respects the author's autonomy while providing a mechanism for the eventual publicization of knowledge.
+#### The Radical Implications of POIP and Future Exploration
 
-More importantly, POIP is not merely an adjustment to a commercial model; it carries broader societal significance. It seeks to promote a new principle: not only should knowledge ultimately be publicized, but profits should also eventually serve the public good. In this framework, the collective effort of society ensures that the value of knowledge can be shared more broadly, rather than being monopolized by a few capital interests.
-
-### The Radical Implications of POIP and Future Exploration
-
-POIP's approach points to an even more radical idea: reimagining the organization of knowledge in a communist society. Not only should knowledge be publicized, but profits should also be collectively owned—directly challenging the foundational logic of capitalism. True elimination of exploitation and a transition to a communist organizational model can only occur through the publicization of profits. POIP is merely the first step in this direction; the road ahead is long and arduous.
+The attempt to implement POIP ultimately points toward a more radical notion: rethinking the organizational models within a communist society. Not only should knowledge be publicized, but "profits" should also become public property, challenging the very foundation of the capitalist system. Only by achieving the publicization of profits can exploitation be truly eradicated, paving the way for society to transition toward a communist mode of organization. POIP represents merely the first step in this direction—a challenging but hopeful endeavor!
 
 ### The POIP Contract for Public Ownership of Intellectual Property
 
@@ -163,7 +165,7 @@ To lower the barrier for new buyers, the contract can allow for immediate compen
 
 While the Buyout Compensation Contract ensures gradual publicization of usage rights, the ownership of the intellectual property formally remains private. To further promote the publicization of knowledge, a "Buyout Compensation Publicization Contract" can be adopted.
 
-#### Buyout Compensation Publicization Contract
+#### Buyout Compensation Publicization Contract (or Goal Max Contract)
 
 Initially, the knowledge producer privately owns the intellectual property. They specify a maximum earnings cap (Max) and set a per-unit price for the product (Price). The required number of sales (Count) is calculated as:
 

@@ -3406,6 +3406,13 @@
   dependencies:
     "@babel/types" "^7.20.7"
 
+"@types/bn.js@^5.1.6":
+  version "5.1.6"
+  resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-5.1.6.tgz#9ba818eec0c85e4d3c679518428afdf611d03203"
+  integrity sha512-Xh8vSwUeMKeYYrj3cX4lGQgFSF/N03r+tv4AiLl1SucqV+uTQpxRcnM8AkXKHwYP9ZPXOYXRr2KPXpVlIvqh9w==
+  dependencies:
+    "@types/node" "*"
+
 "@types/chai-as-promised@^8.0.1":
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-8.0.1.tgz#afd958500955a79053ef6531d677b4edd5c25925"

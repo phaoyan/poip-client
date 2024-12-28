@@ -5,9 +5,10 @@ import { useAnchorProgram, useGetIPAccount, useGetPayment, useTxCreateIPAccount,
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import toast from 'react-hot-toast';
 import { saveAs } from 'file-saver';
-import { IPMetadata } from './types';
+import { IP_PUBLIC, IPMetadata } from './types';
 import { PublicKey } from '@solana/web3.js';
 import forge from 'node-forge';
+import { BN } from 'bn.js';
 
 
 export const useCreateIPAndEncrypt = () => {
@@ -74,7 +75,7 @@ export const usePurchaseAndDecrypt = () => {
     const fetchDecryptionKey = useFetchDecryptionKey();
     const pingSkServer = usePingSkServer()
 
-    return async ({ ipid }: { ipid: PublicKey }) => { //sks: secret key server
+    return async ({ ipid , secret}: { ipid: PublicKey, secret?: {key: string, iv: string} }) => { //sks: secret key server
         if (!wallet.publicKey || !program) {
             console.error("Wallet not connected.");
             return;
@@ -98,7 +99,7 @@ export const usePurchaseAndDecrypt = () => {
             }
 
             // 2. Initiate Solana Purchase Transaction
-            if (!await getPayment(ipid)) {
+            if (!(ipAccountData.ownership.eq(new BN(IP_PUBLIC))) && !await getPayment(ipid)) {
                 try {
                     await txPay({ipid});
                 } catch (err: any) {
@@ -117,8 +118,11 @@ export const usePurchaseAndDecrypt = () => {
             }
             const encryptedBlob = await encryptedFileResponse.blob();
 
-            // 4. Request Decryption Key from poip-sk-server
-            const result = await fetchDecryptionKey({ ipid, sksUrl });
+            // 4. Request Decryption Key from poip-sk-server (if secret has a value, directly use that)
+            const result = 
+                !!secret ?
+                {keyBase64: secret.key, ivBase64: secret.iv} :
+                await fetchDecryptionKey({ ipid, sksUrl });
             if (!result) {
                 console.error("Failed to retrieve decryption key.");
                 return;
